@@ -137,137 +137,92 @@ public:
     }
   }
 };
+//------------------------------------------------------------------------------
+//Player
+enum Player { black_player = 0, white_player = 1, wrong_player = 2};
+const uint Player_cnt = 2;
 
-class Player { // TODO check is check always checked in constructors
-
-  uint idx;
-
-public:
-
-  const static uint black_idx = 0;
-  const static uint white_idx = 1;
-
-  const static uint cnt = 2;
-
-
-  explicit Player () {}
-  explicit Player (uint _idx) { idx = _idx;
-	  //check ();
-  }
-
-  bool operator== (Player other) const { return idx == other.idx; }
-
-  void check () const { 
-    assertc (player_ac, (idx & (~1)) == 0);
-  }
-
-  Player other () const { 
-    return Player(idx ^ 1);
-  }
-  
-  string to_string () const {
-    if (idx == black_idx)
-      return "#";
-    else
-      return "O";
-  }
-
-  bool in_range () const { return idx < cnt; } // TODO do it like check
-  void next () { idx++; }
-
-  uint get_idx () const { return idx; }
-  
-  static Player black () { return Player (black_idx); }
-  static Player white () { return Player (white_idx); }
-};
-
+inline Player Player_other(Player pl) {
+	return Player(pl ^ 1);
+}
+inline bool Player_in_range(Player pl) {
+	return pl < wrong_player;
+}
+inline Player operator++(Player& pl) {
+	return (pl = Player(pl+1));
+}
+inline void Player_check(Player pl) {
+    assertc (player_ac, (pl & (~1)) == 0);
+}
+inline string Player_to_string(Player pl) {
+	if(pl == black_player) {
+		return "#";
+	} else {
+		return "O";
+	}
+}
 istream& operator>> (istream& in, Player& pl) {
   string s;
   in >> s;
-  if (s == "b" || s == "B" || s == "Black" || s == "BLACK "|| s == "black" || s == "#") { pl = Player::black (); return in; }
-  if (s == "w" || s == "W" || s == "White" || s == "WHITE "|| s == "white" || s == "O") { pl = Player::white (); return in; }
+  if (s == "b" || s == "B" || s == "Black" || s == "BLACK "|| s == "black" || s == "#") { pl = black_player; return in; }
+  if (s == "w" || s == "W" || s == "White" || s == "WHITE "|| s == "white" || s == "O") { pl = white_player; return in; }
   in.setstate (ios_base::badbit);
   return in;
 }
-
-ostream& operator<< (ostream& out, Player& pl) { out << pl.to_string (); return out; }
-
+ostream& operator<< (ostream& out, Player& pl) { out << Player_to_string(pl); return out; }
 // faster than non-loop
 #define player_for_each(pl) \
-  for (Player pl = Player::black (); pl.in_range (); pl.next ())
+  for (Player pl = black_player; Player_in_range(pl); ++pl)
 
 //------------------------------------------------------------------------------
 // class color
 
-class Color {
-  uint idx;
-public:
-
-  const static uint black_idx = 0;
-  const static uint white_idx = 1;
-  const static uint empty_idx = 2;
-  const static uint off_board_idx  = 3;
-  const static uint wrong_char_idx = 40;
-
-  const static uint cnt = 4;
-
-  explicit Color () { } // TODO test - remove it
-
-  explicit Color (uint idx_) { idx = idx_; } // TODO test - remove it
-
-  explicit Color (Player pl) { idx = pl.get_idx (); }
-
-  explicit Color (char c) {  // may return color_wrong_char
+enum Color {
+	color_black = 0, 
+	color_white = 1, 
+	color_empty = 2, 
+	color_off_board = 3, 
+	color_wrong = 40
+};
+const int Color_cnt = 4;
+inline Color Color_from_char(char c) {
      switch (c) {
-     case '#': idx = black_idx; break;
-     case 'O': idx = white_idx; break;
-     case '.': idx = empty_idx; break;
-     case '*': idx = off_board_idx; break;
-     default : idx = wrong_char_idx; break;
+     case '#': return color_black;
+     case 'O': return color_white;
+     case '.': return color_empty;
+     case '*': return color_off_board;
+     default : return color_wrong;
      }
-  }
-
-  void check () const { 
-    assertc (color_ac, (idx & (~3)) == 0); 
-  }
-
-  bool is_player     () const { return idx <= white_idx; } // & (~1)) == 0; }
-  bool is_not_player () const { return idx  > white_idx; } // & (~1)) == 0; }
-
-  Player to_player () const { return Player (idx); }
-
-  char to_char () const { 
-    switch (idx) {
-    case black_idx:      return '#';
-    case white_idx:      return 'O';
-    case empty_idx:      return '.';
-    case off_board_idx:  return ' ';
+}
+inline char Color_to_char(Color cl) {
+    switch (cl) {
+    case color_black:      return '#';
+    case color_white:      return 'O';
+    case color_empty:      return '.';
+    case color_off_board:  return ' ';
     default : assertc (color_ac, false);
     }
-    return '?';                 // should not happen
-  }
-
-  bool in_range () const { return idx < Color::cnt; }
-  void next () { idx++; }
-
-  uint get_idx () const { return idx; }
-  bool operator== (Color other) const { return idx == other.idx; }
-  bool operator!= (Color other) const { return idx != other.idx; }
-
-  static Color black ()      { return Color (black_idx); }
-  static Color white ()      { return Color (white_idx); }
-  static Color empty ()      { return Color (empty_idx); }
-  static Color off_board  () { return Color (off_board_idx); }
-  static Color wrong_char () { return Color (wrong_char_idx); }
-};
-
+    return '?';
+}
+inline void Color_check(Color cl) {
+    assertc (color_ac, (cl & (~3)) == 0); 
+}
+inline bool Color_is_player(Color cl) {
+	return cl <= color_white;
+}
+inline bool Color_is_not_player(Color cl) {
+	return cl > color_white;
+}
+inline bool Color_in_range(Color cl) {
+	return cl < Color_cnt;
+}
+inline Color operator++(Color& pl) {
+	return (pl = Color(pl+1));
+}
 // TODO test it for performance
 #define color_for_each(col) \
-  for (Color col = Color::black (); col.in_range (); col.next ())
-
+  for (Color col = color_black; Color_in_range(col); ++col)
 //--------------------------------------------------------------------------------
-
-
 
 #define coord_for_each(rc) \
   for (coord::t rc = 0; rc < int(board_size); rc = coord::t (rc+1))
@@ -356,7 +311,7 @@ ostream& operator<< (ostream& out, Vertex& v) { out << v.to_string (); return ou
 class Move {
 public:
 
-  const static uint cnt = Player::white_idx << Vertex::bits_used | Vertex::cnt;
+  const static uint cnt = white_player << Vertex::bits_used | Vertex::cnt;
  
   const static uint no_move_idx = 1;
 
@@ -368,11 +323,11 @@ public:
   }
 
   explicit Move (Player player, Vertex v) { 
-    idx = (player.get_idx () << Vertex::bits_used) | v.get_idx ();
+    idx = (player << Vertex::bits_used) | v.get_idx ();
   }
 
   explicit Move () {
-    Move (Player::black (), Vertex::any ());
+    Move (black_player, Vertex::any ());
   }
 
   explicit Move (int idx_) {
@@ -388,7 +343,7 @@ public:
   }
 
   string to_string () {
-    return get_player ().to_string () + " " + get_vertex ().to_string ();
+    return Player_to_string(get_player ()) + " " + get_vertex ().to_string ();
   }
 
   uint get_idx () const { return idx; }

@@ -18,7 +18,7 @@ namespace simple_playout_benchmark {
   Board               mc_board [1];
 
   FastMap<Vertex, int>   vertex_score;
-  FastMap<Player, uint>  win_cnt;
+  uint win_cnt[Player_cnt];
   uint                playout_ok_cnt;
   int                 playout_ok_score;
   PerformanceTimer    perf_timer;
@@ -96,11 +96,11 @@ namespace simple_playout_benchmark {
           << endl;
     }
 
-    out << "Black wins    = " << win_cnt [Player::black ()] << endl
-        << "White wins    = " << win_cnt [Player::white ()] << endl
+    out << "Black wins    = " << win_cnt [black_player] << endl
+        << "White wins    = " << win_cnt [white_player] << endl
         << "P(black win)  = " 
-        << float (win_cnt [Player::black ()]) / 
-           float (win_cnt [Player::black ()] + win_cnt [Player::white ()]) 
+        << float (win_cnt [black_player]) / 
+           float (win_cnt [black_player] + win_cnt [white_player]) 
         << endl;
 
     float avg_score = float (playout_ok_score) / float (playout_ok_cnt);
@@ -122,7 +122,6 @@ namespace simple_playout_benchmark {
   }
 }
 // main
-
 int main (int argc, char** argv) { 
   setvbuf (stdout, (char *)NULL, _IONBF, 0);
   setvbuf (stderr, (char *)NULL, _IONBF, 0);
