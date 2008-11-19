@@ -177,51 +177,72 @@ ostream& operator<< (ostream& out, Player& pl) { out << Player_to_string(pl); re
 //------------------------------------------------------------------------------
 // class color
 
-enum Color {
-	color_black = 0, 
-	color_white = 1, 
-	color_empty = 2, 
-	color_off_board = 3, 
-	color_wrong = 40
-};
-const int Color_cnt = 4;
-inline Color Color_from_char(char c) {
+class Color {
+  uint idx;
+public:
+
+  const static uint black_idx = 0;
+  const static uint white_idx = 1;
+  const static uint empty_idx = 2;
+  const static uint off_board_idx  = 3;
+  const static uint wrong_char_idx = 40;
+
+  const static uint cnt = 4;
+
+  explicit Color () { } // TODO test - remove it
+
+  explicit Color (uint idx_) { idx = idx_; } // TODO test - remove it
+
+  explicit Color (Player pl) { idx = pl; }
+
+  explicit Color (char c) {  // may return color_wrong_char
      switch (c) {
-     case '#': return color_black;
-     case 'O': return color_white;
-     case '.': return color_empty;
-     case '*': return color_off_board;
-     default : return color_wrong;
+     case '#': idx = black_idx; break;
+     case 'O': idx = white_idx; break;
+     case '.': idx = empty_idx; break;
+     case '*': idx = off_board_idx; break;
+     default : idx = wrong_char_idx; break;
      }
 }
-inline char Color_to_char(Color cl) {
-    switch (cl) {
-    case color_black:      return '#';
-    case color_white:      return 'O';
-    case color_empty:      return '.';
-    case color_off_board:  return ' ';
+
+  void check () const { 
+    assertc (color_ac, (idx & (~3)) == 0); 
+  }
+
+  bool is_player     () const { return idx <= white_idx; } // & (~1)) == 0; }
+  bool is_not_player () const { return idx  > white_idx; } // & (~1)) == 0; }
+
+  Player to_player () const { return Player (idx); }
+
+  char to_char () const { 
+    switch (idx) {
+    case black_idx:      return '#';
+    case white_idx:      return 'O';
+    case empty_idx:      return '.';
+    case off_board_idx:  return ' ';
     default : assertc (color_ac, false);
     }
-    return '?';
+    return '?';                 // should not happen
 }
-inline void Color_check(Color cl) {
-    assertc (color_ac, (cl & (~3)) == 0); 
-}
-inline bool Color_is_player(Color cl) {
-	return cl <= color_white;
-}
-inline bool Color_is_not_player(Color cl) {
-	return cl > color_white;
-}
-inline bool Color_in_range(Color cl) {
-	return cl < Color_cnt;
-}
-inline Color operator++(Color& pl) {
-	return (pl = Color(pl+1));
-}
+
+  bool in_range () const { return idx < Color::cnt; }
+  void next () { idx++; }
+
+  uint get_idx () const { return idx; }
+  bool operator== (Color other) const { return idx == other.idx; }
+  bool operator!= (Color other) const { return idx != other.idx; }
+
+  static Color black ()      { return Color (black_idx); }
+  static Color white ()      { return Color (white_idx); }
+  static Color empty ()      { return Color (empty_idx); }
+  static Color off_board  () { return Color (off_board_idx); }
+  static Color wrong_char () { return Color (wrong_char_idx); }
+};
+
 // TODO test it for performance
 #define color_for_each(col) \
-  for (Color col = color_black; Color_in_range(col); ++col)
+  for (Color col = Color::black (); col.in_range (); col.next ())
+
 //--------------------------------------------------------------------------------
 
 #define coord_for_each(rc) \
