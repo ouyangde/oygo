@@ -152,7 +152,8 @@ public:
 
   explicit Player () {}
   explicit Player (uint _idx) { idx = _idx;
-	  check ();}
+	  //check ();
+  }
 
   bool operator== (Player other) const { return idx == other.idx; }
 
@@ -390,7 +391,7 @@ public:
     return get_player ().to_string () + " " + get_vertex ().to_string ();
   }
 
-  uint get_idx () { return idx; }
+  uint get_idx () const { return idx; }
 
   bool operator== (Move other) const { return idx == other.idx; }
   bool operator!= (Move other) const { return idx != other.idx; }
