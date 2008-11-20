@@ -2,33 +2,33 @@ namespace coord { // TODO class
 
   typedef int t;
 
-  bool is_ok (t coord) { return (coord < int (board_size)) & (coord >= -1); }
-  bool is_on_board (t coord) { return uint (coord) < board_size; }
+  template<uint T> bool is_ok (t coord) { return (coord < int (T)) & (coord >= -1); }
+  template<uint T> bool is_on_board (t coord) { return uint (coord) < T; }
 
-  void check (t coo) { 
+  template<uint T> void check (t coo) { 
     unused (coo);
-    assertc (coord_ac, is_ok (coo)); 
+    assertc (coord_ac, is_ok<T> (coo)); 
   }
 
-  void check2 (t row, t col) { 
+  template<uint T> void check2 (t row, t col) { 
     if (!coord_ac) return;
     if (row == -1 && col == -1) return;
-    assertc (coord_ac, is_on_board (row)); 
-    assertc (coord_ac, is_on_board (col)); 
+    assertc (coord_ac, is_on_board<T> (row)); 
+    assertc (coord_ac, is_on_board<T> (col)); 
   }
 
   string col_tab = "ABCDEFGHJKLMNOPQRSTUVWXYZ";
 
   // TODO to gtp string
-  string row_to_string (t row) {
-    check (row);
+  template<uint T> string row_to_string (t row) {
+    check<T> (row);
     ostringstream ss;
-    ss << board_size - row;
+    ss << T - row;
     return ss.str ();
   }
 
-  string col_to_string (t col) {
-    check (col);
+  template<uint T> string col_to_string (t col) {
+    check<T> (col);
     ostringstream ss;
     ss << col_tab [col];
     return ss.str ();
@@ -36,7 +36,7 @@ namespace coord { // TODO class
 
 }
 
-class Vertex {
+template<uint T> class Vertex {
 
 
   //static_assert (cnt <= (1 << bits_used));
@@ -47,7 +47,7 @@ class Vertex {
 
 public:
 
-  const static uint dNS = (board_size + 2);
+  const static uint dNS = (T + 2);
   const static uint dWE = 1;
 
   const static uint bits_used = 9;     // on 19x19 cnt == 441 < 512 == 1 << 9;
@@ -55,14 +55,14 @@ public:
   const static uint any_idx  = 1; // TODO any
   const static uint resign_idx = 2;
 
-  const static uint cnt = (board_size + 2) * (board_size + 2);
+  const static uint cnt = (T + 2) * (T + 2);
 
   explicit Vertex () { } // TODO is it needed
   explicit Vertex (uint _idx) { idx = _idx; }
 
  // TODO make this constructor a static function
   Vertex (coord::t r, coord::t c) {
-    coord::check2 (r, c);
+    coord::check2<T> (r, c);
     idx = (r+1) * dNS + (c+1) * dWE;
   }
 
@@ -82,7 +82,7 @@ public:
 
   // this usualy can be achieved quicker by color_at lookup
   bool is_on_board () const {
-    return coord::is_on_board (row ()) & coord::is_on_board (col ());
+    return coord::is_on_board<T> (row ()) & coord::is_on_board<T> (col ());
   }
 
   void check_is_on_board () const { 
@@ -113,7 +113,7 @@ public:
       r = row ();
       c = col ();
       ostringstream ss;
-      ss << coord::col_to_string (c) << coord::row_to_string (r);
+      ss << coord::col_to_string<T> (c) << coord::row_to_string<T> (r);
       return ss.str ();
     }
   }
@@ -124,13 +124,13 @@ public:
 
   static Vertex of_sgf_coords (string s) {
     if (s == "") return pass ();
-    if (s == "tt" && board_size <= 19) return pass ();
+    if (s == "tt" && T <= 19) return pass ();
     if (s.size () != 2 ) return any ();
     coord::t col = s[0] - 'a';
     coord::t row = s[1] - 'a';
     
-    if (coord::is_on_board (row) &&
-        coord::is_on_board (col)) {
+    if (coord::is_on_board<T> (row) &&
+        coord::is_on_board<T> (col)) {
       return Vertex (row, col);
     } else {
       return any ();
@@ -225,7 +225,7 @@ inline Color operator++(Color& pl) {
 //--------------------------------------------------------------------------------
 
 #define coord_for_each(rc) \
-  for (coord::t rc = 0; rc < int(board_size); rc = coord::t (rc+1))
+  for (coord::t rc = 0; rc < int(T); rc = coord::t (rc+1))
 
 
 //--------------------------------------------------------------------------------
@@ -234,15 +234,16 @@ inline Color operator++(Color& pl) {
 
 
 // TODO of_gtp_string
-istream& operator>> (istream& in, Vertex& v) {
+template<uint T> istream& operator>> (istream& in, Vertex<T>& v) {
+  const uint board_size = T;
   char c;
   int n;
   coord::t row, col;
 
   string str;
   if (!(in >> str)) return in;
-  if (str == "pass" || str == "PASS" || str == "Pass") { v = Vertex::pass (); return in; }
-  if (str == "resign" || str == "RESIGN" || str == "Resign") { v = Vertex::resign (); return in; }
+  if (str == "pass" || str == "PASS" || str == "Pass") { v = Vertex<T>::pass (); return in; }
+  if (str == "resign" || str == "RESIGN" || str == "Resign") { v = Vertex<T>::resign (); return in; }
 
   istringstream in2 (str);
   if (!(in2 >> c >> n)) return in;
@@ -260,25 +261,25 @@ istream& operator>> (istream& in, Vertex& v) {
     return in;
   }
 
-  v = Vertex (row, col);
+  v = Vertex<T> (row, col);
   return in;
 }
 
-ostream& operator<< (ostream& out, Vertex& v) { out << v.to_string (); return out; }
+template<uint T> ostream& operator<< (ostream& out, Vertex<T>& v) { out << v.to_string (); return out; }
 
 
-#define vertex_for_each_all(vv) for (Vertex vv = Vertex(0); vv.in_range (); vv.next ()) // TODO 0 works??? // TODO player the same way!
+#define vertex_for_each_all(vv) for (Vertex<T> vv = Vertex<T>(0); vv.in_range (); vv.next ()) // TODO 0 works??? // TODO player the same way!
 
 // misses some offboard vertices (for speed) 
 #define vertex_for_each_faster(vv)                                  \
-  for (Vertex vv = Vertex(Vertex::dNS+Vertex::dWE);                 \
-       vv.get_idx () <= board_size * (Vertex::dNS + Vertex::dWE);   \
+  for (Vertex<T> vv = Vertex<T>(Vertex<T>::dNS+Vertex<T>::dWE);                 \
+       vv.get_idx () <= T * (Vertex<T>::dNS + Vertex<T>::dWE);   \
        vv.next ())
 
 
 #define vertex_for_each_nbr(center_v, nbr_v, block) {   \
     center_v.check_is_on_board ();                      \
-    Vertex nbr_v;                                       \
+    Vertex<T> nbr_v;                                       \
     nbr_v = center_v.N (); block;                       \
     nbr_v = center_v.W (); block;                       \
     nbr_v = center_v.E (); block;                       \
@@ -287,7 +288,7 @@ ostream& operator<< (ostream& out, Vertex& v) { out << v.to_string (); return ou
 
 #define vertex_for_each_diag_nbr(center_v, nbr_v, block) {      \
     center_v.check_is_on_board ();                              \
-    Vertex nbr_v;                                               \
+    Vertex<T> nbr_v;                                               \
     nbr_v = center_v.NW (); block;                              \
     nbr_v = center_v.NE (); block;                              \
     nbr_v = center_v.SW (); block;                              \
@@ -308,26 +309,26 @@ ostream& operator<< (ostream& out, Vertex& v) { out << v.to_string (); return ou
 
 //--------------------------------------------------------------------------------
 
-class Move {
+template<uint T> class Move {
 public:
 
-  const static uint cnt = white_player << Vertex::bits_used | Vertex::cnt;
+  const static uint cnt = white_player << Vertex<T>::bits_used | Vertex<T>::cnt;
  
   const static uint no_move_idx = 1;
 
   uint idx;
 
   void check () {
-    Player (idx >> Vertex::bits_used);
-    Vertex (idx & ((1 << Vertex::bits_used) - 1)).check ();
+    Player (idx >> Vertex<T>::bits_used);
+    Vertex<T> (idx & ((1 << Vertex<T>::bits_used) - 1)).check ();
   }
 
-  explicit Move (Player player, Vertex v) { 
-    idx = (player << Vertex::bits_used) | v.get_idx ();
+  explicit Move (Player player, Vertex<T> v) { 
+    idx = (player << Vertex<T>::bits_used) | v.get_idx ();
   }
 
   explicit Move () {
-    Move (black_player, Vertex::any ());
+    Move (black_player, Vertex<T>::any ());
   }
 
   explicit Move (int idx_) {
@@ -335,11 +336,11 @@ public:
   }
 
   Player get_player () { 
-    return Player (idx >> Vertex::bits_used);
+    return Player (idx >> Vertex<T>::bits_used);
   }
 
-  Vertex get_vertex () { 
-    return Vertex (idx & ((1 << ::Vertex::bits_used) - 1)) ; 
+  Vertex<T> get_vertex () { 
+    return Vertex<T> (idx & ((1 << ::Vertex<T>::bits_used) - 1)) ; 
   }
 
   string to_string () {
@@ -356,23 +357,23 @@ public:
 };
 
 
-istream& operator>> (istream& in, Move& m) {
+template<uint T> istream& operator>> (istream& in, Move<T>& m) {
   Player pl;
-  Vertex v;
+  Vertex<T> v;
   if (!(in >> pl >> v)) return in;
-  m = Move (pl, v);
+  m = Move<T> (pl, v);
   return in;
 }
 
   
-template <typename T>
-string to_string_2d (FastMap<Vertex, T>& map, int precision = 3) {
+template <typename T1,uint T>
+string to_string_2d (FastMap<Vertex<T>, T1>& map, int precision = 3) {
   ostringstream out;
   out << setiosflags (ios_base::fixed) ;
   
   coord_for_each (row) {
     coord_for_each (col) {
-      Vertex v = Vertex (row, col);
+      Vertex<T> v = Vertex<T> (row, col);
       out.precision(precision);
       out.width(precision + 3);
       out << map [v] << " ";

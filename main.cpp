@@ -15,19 +15,19 @@ using namespace std;
 #include "playout.h"
 namespace simple_playout_benchmark {
 
-  Board               mc_board [1];
 
-  FastMap<Vertex, int>   vertex_score;
   uint win_cnt[Player_cnt];
   uint                playout_ok_cnt;
   int                 playout_ok_score;
   PerformanceTimer    perf_timer;
 
-  template <bool score_per_vertex> 
-  void run (Board const * start_board, 
+  template <bool score_per_vertex,uint T> 
+  void run (Board<T> const * start_board, 
             uint playout_cnt, 
             ostream& out) 
   {
+    Board<T>  mc_board [1];
+    FastMap<Vertex<T>, int>   vertex_score;
     playout_status_t status;
     Player winner;
     int score;
@@ -43,8 +43,8 @@ namespace simple_playout_benchmark {
 
     perf_timer.reset ();
 
-    SimplePolicy policy;
-    Playout<SimplePolicy> playout(&policy, mc_board);
+    SimplePolicy<T> policy;
+    Playout<SimplePolicy<T>,T> playout(&policy, mc_board);
 
     perf_timer.start ();
     float seconds_begin = get_seconds ();
@@ -87,7 +87,7 @@ namespace simple_playout_benchmark {
     out << endl;
     
     if (score_per_vertex) {
-      FastMap<Vertex, float> black_own;
+      FastMap<Vertex<T>, float> black_own;
       vertex_for_each_all (v) 
         black_own [v] = float(vertex_score [v]) / float (playout_ok_cnt);
 
@@ -126,7 +126,7 @@ int main (int argc, char** argv) {
   setvbuf (stdout, (char *)NULL, _IONBF, 0);
   setvbuf (stderr, (char *)NULL, _IONBF, 0);
 
-  Board board;
+  Board<9> board;
   ostringstream response;
   uint playout_cnt = 100000;
   simple_playout_benchmark::run<false> (&board, playout_cnt, response);

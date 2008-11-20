@@ -6,12 +6,8 @@ typedef unsigned long long uint64;
 
 // board parameters
 const float default_komi       = 5.5;
-const uint board_size          = 9;
-const uint board_area          = board_size * board_size;
-const uint max_empty_v_cnt     = board_area;
-const uint max_game_length     = board_area * 4;
+const uint default_board_size  = 9;
 const bool playout_print       = false;
-const uint max_playout_length  = board_area * 2;
 
 // mercy rule
 

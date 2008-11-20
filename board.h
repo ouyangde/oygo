@@ -30,24 +30,24 @@ public:
 // class Zobrist
 
 
-class Zobrist {
+template<uint T> class Zobrist {
 public:
 
-  FastMap<Move, Hash> hashes;
+  FastMap<Move<T>, Hash> hashes;
 
   Zobrist (PmRandom& pm) {
     player_for_each (pl) vertex_for_each_all (v) {
-      Move m = Move (pl, v);
+      Move<T> m = Move<T> (pl, v);
       hashes [m].randomize (pm);
     }
   }
 
-  Hash of_move (Move m) const {
+  Hash of_move (Move<T> m) const {
     return hashes [m];
   }
 
-  Hash of_pl_v (Player pl,  Vertex v) const {
-    return hashes [Move (pl, v)];
+  Hash of_pl_v (Player pl,  Vertex<T> v) const {
+    return hashes [Move<T> (pl, v)];
   }
 
 };
@@ -130,43 +130,46 @@ const uint NbrCounter::player_inc_tab [Player_cnt] = { NbrCounter::black_inc_val
 enum play_ret_t { play_ok, play_suicide, play_ss_suicide, play_ko };
 
 
-class Board {
+template<uint T> class Board {
 
 public:
 
-  static const Zobrist zobrist[1];
+  static const uint board_area = T * T;
+  static const uint max_empty_v_cnt     = board_area;
+  static const uint max_game_length     = board_area * 4;
+  static const Zobrist<T> zobrist[1];
 
-  FastMap<Vertex, Color>       color_at;
-  FastMap<Vertex, NbrCounter>  nbr_cnt; // incremental, for fast eye checking
-  FastMap<Vertex, uint>        empty_pos;
-  FastMap<Vertex, Vertex>      chain_next_v;
+  FastMap<Vertex<T>, Color>       color_at;
+  FastMap<Vertex<T>, NbrCounter>  nbr_cnt; // incremental, for fast eye checking
+  FastMap<Vertex<T>, uint>        empty_pos;
+  FastMap<Vertex<T>, Vertex<T> >      chain_next_v;
 
-  uint                         chain_lib_cnt [Vertex::cnt]; // indexed by chain_id
-  FastMap<Vertex, uint>        chain_id;
+  uint                         chain_lib_cnt [Vertex<T>::cnt]; // indexed by chain_id
+  FastMap<Vertex<T>, uint>        chain_id;
   
-  Vertex                       empty_v [board_area];
+  Vertex<T>                       empty_v [board_area];
   uint                         empty_v_cnt;
   uint                         last_empty_v_cnt;
 
   uint			       player_v_cnt[Player_cnt]; // map Player to uint
-  Vertex		       player_last_v[Player_cnt];// map Player to Vertex
+  Vertex<T>		       player_last_v[Player_cnt];// map Player to Vertex
 
   Hash                         hash;
   int                          komi;
 
-  Vertex                       ko_v;             // vertex forbidden by ko
+  Vertex<T>                       ko_v;             // vertex forbidden by ko
 
   Player                       last_player;      // player who made the last play (other::player is forbidden to retake)
   uint                         move_no;
 
   play_ret_t                   last_move_status;
-  Move                         move_history [max_game_length];
+  Move<T>                         move_history [max_game_length];
 
 public:                         // macros
 
 
   #define empty_v_for_each(board, vv, i) {                              \
-      Vertex vv = Vertex::any ();                                       \
+      Vertex<T> vv = Vertex<T>::any ();                                       \
       rep (ev_i, (board)->empty_v_cnt) {                                \
         vv = (board)->empty_v [ev_i];                                   \
         i;                                                              \
@@ -175,7 +178,7 @@ public:                         // macros
 
   
   #define empty_v_for_each_and_pass(board, vv, i) {                     \
-      Vertex vv = Vertex::pass ();                                      \
+      Vertex<T> vv = Vertex<T>::pass ();                                      \
       i;                                                                \
       rep (ev_i, (board)->empty_v_cnt) {                                \
         vv = (board)->empty_v [ev_i];                                   \
@@ -190,7 +193,7 @@ public:                         // consistency checks
   void check_empty_v () const {
     if (!board_empty_v_ac) return;
 
-    FastMap<Vertex, bool> noticed;
+    FastMap<Vertex<T>, bool> noticed;
     uint exp_player_v_cnt[Player_cnt];
 
     vertex_for_each_all (v) noticed[v] = false;
@@ -247,8 +250,8 @@ public:                         // consistency checks
       r = v.row ();
       c = v.col ();
 
-      assert (coord::is_on_board (r)); // checking the macro
-      assert (coord::is_on_board (c));
+      assert (coord::is_on_board<T> (r)); // checking the macro
+      assert (coord::is_on_board<T> (c));
           
       color_for_each (col) nbr_color_cnt [col] = 0;
           
@@ -334,12 +337,12 @@ public:                         // board interface
     empty_v_cnt  = 0;
     player_for_each (pl) {
       player_v_cnt  [pl] = 0;
-      player_last_v [pl] = Vertex::any ();
+      player_last_v [pl] = Vertex<T>::any ();
     }
     move_no      = 0;
     last_player  = white_player; // act player is other
     last_move_status = play_ok;
-    ko_v         = Vertex::any ();
+    ko_v         = Vertex<T>::any ();
     vertex_for_each_all (v) {
       color_at      [v] = color_off_board;
       nbr_cnt       [v] = NbrCounter (0, 0, NbrCounter::max);
@@ -406,12 +409,12 @@ public: // legality functions
   // it has to point to empty vertexand empty
   // can't recognize play_suicide
   all_inline 
-  bool is_pseudo_legal (Player player, Vertex v) {
+  bool is_pseudo_legal (Player player, Vertex<T> v) {
     check ();
     //v.check_is_on_board (); // TODO check v = pass || onboard
 
     return 
-      v == Vertex::pass () || 
+      v == Vertex<T>::pass () || 
       !nbr_cnt[v].player_cnt_is_max (Player_other(player)) || 
       (!play_eye_is_ko (player, v) && 
        !play_eye_is_suicide (v));
@@ -419,14 +422,14 @@ public: // legality functions
 
 
   // a very slow function
-  bool is_strict_legal (Player pl, Vertex v) {            // slow function
+  bool is_strict_legal (Player pl, Vertex<T> v) {            // slow function
     if (try_play (pl, v) == false) return false;
     sure_undo ();
     return true;
   }
 
 
-  bool is_eyelike (Player player, Vertex v) { 
+  bool is_eyelike (Player player, Vertex<T> v) { 
     assertc (board_ac, color_at [v] == color_empty);
     if (! nbr_cnt[v].player_cnt_is_max (player)) return false;
 
@@ -458,8 +461,8 @@ public: // play move functions
 
 
   // very slow function
-  bool try_play (Player player, Vertex v) {
-    if (v == Vertex::pass ()) {
+  bool try_play (Player player, Vertex<T> v) {
+    if (v == Vertex<T>::pass ()) {
       play_legal (player, v);      
       return true;
     }
@@ -491,11 +494,11 @@ public: // play move functions
   // accept pass
   // will ignore simple-ko ban
   // will play single stone suicide
-  void play_legal (Player player, Vertex v) all_inline {
+  void play_legal (Player player, Vertex<T> v) all_inline {
     check ();
 
-    if (v == Vertex::pass ()) {
-      basic_play (player, Vertex::pass ());
+    if (v == Vertex<T>::pass ()) {
+      basic_play (player, Vertex<T>::pass ());
       return;
     }
     
@@ -514,7 +517,7 @@ public: // play move functions
   
   // very slow function
   bool undo () {
-    Move replay [max_game_length];
+    Move<T> replay [max_game_length];
 
     uint   game_length  = move_no;
     float  old_komi     = get_komi ();
@@ -546,12 +549,12 @@ public: // play move functions
 public: // auxiliary functions
 
 
-  bool play_eye_is_ko (Player player, Vertex v) {
+  bool play_eye_is_ko (Player player, Vertex<T> v) {
     return (v == ko_v) & (player == Player_other(last_player));
   }
 
 
-  bool play_eye_is_suicide (Vertex v) {
+  bool play_eye_is_suicide (Vertex<T> v) {
     uint all_nbr_live = true;
     vertex_for_each_nbr (v, nbr_v, all_nbr_live &= (--chain_lib_cnt [chain_id [nbr_v]] != 0));
     vertex_for_each_nbr (v, nbr_v, chain_lib_cnt [chain_id [nbr_v]]++);
@@ -560,7 +563,7 @@ public: // auxiliary functions
 
 
   all_inline
-  void play_not_eye (Player player, Vertex v) {
+  void play_not_eye (Player player, Vertex<T> v) {
     check ();
     v.check_is_on_board ();
     assertc (board_ac, color_at[v] == color_empty);
@@ -603,7 +606,7 @@ public: // auxiliary functions
 
 
   no_inline
-  void play_eye_legal (Player player, Vertex v) {
+  void play_eye_legal (Player player, Vertex<T> v) {
     vertex_for_each_nbr (v, nbr_v, chain_lib_cnt [chain_id [nbr_v]]--);
 
     basic_play (player, v);
@@ -623,24 +626,24 @@ public: // auxiliary functions
     if (last_empty_v_cnt == empty_v_cnt) { // if captured exactly one stone, end this was eye
       ko_v = empty_v [empty_v_cnt - 1]; // then ko formed
     } else {
-      ko_v = Vertex::any ();
+      ko_v = Vertex<T>::any ();
     }
   }
 
 
-  void basic_play (Player player, Vertex v) { // Warning: has to be called before place_stone, because of hash storing
+  void basic_play (Player player, Vertex<T> v) { // Warning: has to be called before place_stone, because of hash storing
     assertc (board_ac, move_no <= max_game_length);
-    ko_v                    = Vertex::any ();
+    ko_v                    = Vertex<T>::any ();
     last_empty_v_cnt        = empty_v_cnt;
     last_player             = player;
     player_last_v [player]  = v;
-    move_history [move_no]  = Move (player, v);
+    move_history [move_no]  = Move<T> (player, v);
     move_no                += 1;
   }
 
 
-  void merge_chains (Vertex v_base, Vertex v_new) {
-    Vertex act_v;
+  void merge_chains (Vertex<T> v_base, Vertex<T> v_new) {
+    Vertex<T> act_v;
 
     chain_lib_cnt [chain_id [v_base]] += chain_lib_cnt [chain_id [v_new]];
 
@@ -655,9 +658,9 @@ public: // auxiliary functions
 
 
   no_inline 
-  void remove_chain (Vertex v){
-    Vertex act_v;
-    Vertex tmp_v;
+  void remove_chain (Vertex<T> v){
+    Vertex<T> act_v;
+    Vertex<T> tmp_v;
     Color old_color;
 
     old_color = color_at[v];
@@ -686,7 +689,7 @@ public: // auxiliary functions
   }
 
 
-  void place_stone (Player pl, Vertex v) {
+  void place_stone (Player pl, Vertex<T> v) {
     hash ^= zobrist->of_pl_v (pl, v);
     player_v_cnt[pl]++;
     color_at[v] = Color (pl);
@@ -702,7 +705,7 @@ public: // auxiliary functions
   }
 
 
-  void remove_stone (Vertex v) {
+  void remove_stone (Vertex<T> v) {
     hash ^= zobrist->of_pl_v ((Player)color_at [v], v);
     player_v_cnt [color_at[v]]--;
     color_at [v] = color_empty;
@@ -711,7 +714,7 @@ public: // auxiliary functions
     empty_v [empty_v_cnt++] = v;
     chain_id [v] = v.get_idx ();
 
-    assertc (board_ac, empty_v_cnt < Vertex::cnt);
+    assertc (board_ac, empty_v_cnt < Vertex<T>::cnt);
   }
 
 
@@ -723,8 +726,8 @@ public:                         // utils
 
   bool both_player_pass () {
     return 
-      (player_last_v [black_player] == Vertex::pass ()) & 
-      (player_last_v [white_player] == Vertex::pass ());
+      (player_last_v [black_player] == Vertex<T>::pass ()) & 
+      (player_last_v [white_player] == Vertex<T>::pass ());
   }
 
 
@@ -753,7 +756,7 @@ public:                         // utils
   }
 
 
-  int vertex_score (Vertex v) {
+  int vertex_score (Vertex<T> v) {
     //     FastMap<Color, int> Coloro_score;
     //     Coloro_score [Color::black ()] = 1;
     //     Coloro_score [Color::white ()] = -1;
@@ -775,7 +778,7 @@ public:                         // utils
   }
 
 
-  string to_string (Vertex mark_v = Vertex::any ()) const {
+  string to_string (Vertex<T> mark_v = Vertex<T>::any ()) const {
     ostringstream out;
 
     #define os(n)      out << " " << n
@@ -783,27 +786,28 @@ public:                         // utils
     #define o_right(n) out << ")" << n
     
     out << " ";
+    const uint board_size = T;
     if (board_size < 10) out << " "; else out << "  ";
-    coord_for_each (col) os (coord::col_to_string (col));
+    coord_for_each (col) os (coord::col_to_string<T> (col));
     out << endl;
 
     coord_for_each (row) {
       if (board_size >= 10 && board_size - row < 10) out << " ";
-      os (coord::row_to_string (row));
+      os (coord::row_to_string<T> (row));
       coord_for_each (col) {
-        Vertex v = Vertex (row, col);
+        Vertex<T> v = Vertex<T> (row, col);
         char ch = Color_to_char(color_at [v]);
         if      (v == mark_v)        o_left  (ch);
         else if (v == mark_v.E ())   o_right (ch);
         else                         os (ch);
       }
       if (board_size >= 10 && board_size - row < 10) out << " ";
-      os (coord::row_to_string (row));
+      os (coord::row_to_string<T> (row));
       out << endl;
     }
     
     if (board_size < 10) out << "  "; else out << "   ";
-    coord_for_each (col) os (coord::col_to_string (col));
+    coord_for_each (col) os (coord::col_to_string<T> (col));
     out << endl;
 
     #undef os
@@ -814,11 +818,11 @@ public:                         // utils
   }
 
 
-  void print_cerr (Vertex v = Vertex::pass ()) const {
+  void print_cerr (Vertex<T> v = Vertex<T>::pass ()) const {
     cerr << to_string (v);
   }
 
 };
 
 PmRandom zobrist_pm;
-const Zobrist Board::zobrist[1] = { Zobrist (zobrist_pm) }; // TODO move it to board
+template<uint T> const Zobrist<T> Board<T>::zobrist[1] = { Zobrist<T> (zobrist_pm) }; // TODO move it to board

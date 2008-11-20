@@ -3,12 +3,13 @@ enum playout_status_t { pass_pass, mercy, too_long };
 
 
 // ----------------------------------------------------------------------
-template <typename Policy> class Playout {
+template <typename Policy,uint T> class Playout {
 public:
+  static const uint max_playout_length = T * T * 2;
   Policy*  policy;
-  Board*   board;
+  Board<T>*   board;
 
-  Playout (Policy* policy_, Board*  board_) : policy (policy_), board (board_) {}
+  Playout (Policy* policy_, Board<T>*  board_) : policy (policy_), board (board_) {}
 
   all_inline
   void play_move () {
@@ -16,7 +17,7 @@ public:
     
     while (true) {
       Player   act_player = board->act_player ();
-      Vertex   v          = policy->next_vertex ();
+      Vertex<T>   v          = policy->next_vertex ();
 
       if (board->is_pseudo_legal (act_player, v) == false) {
         policy->bad_vertex (v);
@@ -56,7 +57,7 @@ public:
 };
 
 // ----------------------------------------------------------------------
-class SimplePolicy {
+template<uint T> class SimplePolicy {
 protected:
 
   static PmRandom pm; // TODO make it non-static
@@ -64,14 +65,14 @@ protected:
   uint to_check_cnt;
   uint act_evi;
 
-  Board* board;
+  Board<T>* board;
   Player act_player;
 
 public:
 
   SimplePolicy () : board (NULL) { }
 
-  void begin_playout (Board* board_) { 
+  void begin_playout (Board<T>* board_) { 
     board = board_;
   }
 
@@ -81,10 +82,10 @@ public:
     act_evi        = pm.rand_int (board->empty_v_cnt); 
   }
 
-  Vertex next_vertex () {
-    Vertex v;
+  Vertex<T> next_vertex () {
+    Vertex<T> v;
     while (true) {
-      if (to_check_cnt == 0) return Vertex::pass ();
+      if (to_check_cnt == 0) return Vertex<T>::pass ();
       to_check_cnt--;
       v = board->empty_v [act_evi];
       act_evi++;
@@ -93,10 +94,10 @@ public:
     }
   }
 
-  void bad_vertex (Vertex) {
+  void bad_vertex (Vertex<T>) {
   }
 
-  void played_vertex (Vertex) { 
+  void played_vertex (Vertex<T>) { 
   }
 
   void end_playout (playout_status_t) { 
@@ -104,4 +105,4 @@ public:
 
 };
 
-PmRandom SimplePolicy::pm(123);
+template<uint T> PmRandom SimplePolicy<T>::pm(123);
