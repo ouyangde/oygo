@@ -60,7 +60,7 @@ public:
 template<uint T> class SimplePolicy {
 protected:
 
-  PmRandom pm; // TODO make it non-static
+  static PmRandom pm; // TODO make it non-static
 
   uint to_check_cnt;
   uint act_evi;
@@ -70,7 +70,7 @@ protected:
 
 public:
 
-  SimplePolicy () : board (NULL),pm(123) { }
+  SimplePolicy () : board (NULL) { }
 
   void begin_playout (Board<T>* board_) { 
     board = board_;
@@ -105,4 +105,4 @@ public:
 
 };
 
-//template<uint T> PmRandom SimplePolicy<T>::pm(123);
+template<uint T> PmRandom SimplePolicy<T>::pm(123);
