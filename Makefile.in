@@ -163,7 +163,7 @@ target_alias = @target_alias@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 oygo_SOURCES = main.cpp defines.cpp
-oygo_CXXFLAGS = -g -O3 -fomit-frame-pointer
+oygo_CXXFLAGS = -g -O3 -fomit-frame-pointer #-ffast-math -frename-registers
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-am
 
