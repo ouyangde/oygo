@@ -1,3 +1,6 @@
+/*
+ * 坐标类，坐标由两个int值表示，-1表示棋盘外的坐标
+ */
 namespace coord { // TODO class
 
   typedef int t;
@@ -35,13 +38,18 @@ namespace coord { // TODO class
   }
 
 }
+#define coord_for_each(rc) \
+  for (coord::t rc = 0; rc < int(T); rc = coord::t (rc+1))
 
+//--------------------------------------------------------------------------------
+
+/*
+ * 棋盘上的交叉点，参数T是棋盘大小，用一个uint存储
+ */
 template<uint T> class Vertex {
-
 
   //static_assert (cnt <= (1 << bits_used));
   //static_assert (cnt > (1 << (bits_used-1)));
-
 
   uint idx;
 
@@ -137,101 +145,6 @@ public:
     }
   }
 };
-//------------------------------------------------------------------------------
-//Player
-enum Player { black_player = 0, white_player = 1, wrong_player = 2};
-const uint Player_cnt = 2;
-
-inline Player Player_other(Player pl) {
-	return Player(pl ^ 1);
-}
-inline bool Player_in_range(Player pl) {
-	return pl < wrong_player;
-}
-inline Player operator++(Player& pl) {
-	return (pl = Player(pl+1));
-}
-inline void Player_check(Player pl) {
-    assertc (player_ac, (pl & (~1)) == 0);
-}
-inline string Player_to_string(Player pl) {
-	if(pl == black_player) {
-		return "#";
-	} else {
-		return "O";
-	}
-}
-istream& operator>> (istream& in, Player& pl) {
-  string s;
-  in >> s;
-  if (s == "b" || s == "B" || s == "Black" || s == "BLACK "|| s == "black" || s == "#") { pl = black_player; return in; }
-  if (s == "w" || s == "W" || s == "White" || s == "WHITE "|| s == "white" || s == "O") { pl = white_player; return in; }
-  in.setstate (ios_base::badbit);
-  return in;
-}
-ostream& operator<< (ostream& out, Player& pl) { out << Player_to_string(pl); return out; }
-// faster than non-loop
-#define player_for_each(pl) \
-  for (Player pl = black_player; Player_in_range(pl); ++pl)
-
-//------------------------------------------------------------------------------
-// class color
-
-enum Color {
-	color_black = 0, 
-	color_white = 1, 
-	color_empty = 2, 
-	color_off_board = 3, 
-	color_wrong = 40
-};
-const int Color_cnt = 4;
-inline Color Color_from_char(char c) {
-     switch (c) {
-     case '#': return color_black;
-     case 'O': return color_white;
-     case '.': return color_empty;
-     case '*': return color_off_board;
-     default : return color_wrong;
-     }
-}
-inline char Color_to_char(Color cl) {
-    switch (cl) {
-    case color_black:      return '#';
-    case color_white:      return 'O';
-    case color_empty:      return '.';
-    case color_off_board:  return ' ';
-    default : assertc (color_ac, false);
-    }
-    return '?';
-}
-inline void Color_check(Color cl) {
-    assertc (color_ac, (cl & (~3)) == 0); 
-}
-inline bool Color_is_player(Color cl) {
-	return cl <= color_white;
-}
-inline bool Color_is_not_player(Color cl) {
-	return cl > color_white;
-}
-inline bool Color_in_range(Color cl) {
-	return cl < Color_cnt;
-}
-inline Color operator++(Color& pl) {
-	return (pl = Color(pl+1));
-}
-// TODO test it for performance
-#define color_for_each(col) \
-  for (Color col = color_black; Color_in_range(col); ++col)
-//--------------------------------------------------------------------------------
-
-#define coord_for_each(rc) \
-  for (coord::t rc = 0; rc < int(T); rc = coord::t (rc+1))
-
-
-//--------------------------------------------------------------------------------
-
-
-
 
 // TODO of_gtp_string
 template<uint T> istream& operator>> (istream& in, Vertex<T>& v) {
@@ -306,13 +219,112 @@ template<uint T> ostream& operator<< (ostream& out, Vertex<T>& v) { out << v.to_
     }                                                           \
   }
 
+//------------------------------------------------------------------------------
+/*
+ * Player,使用位运算加速计算另一方:other
+ */
+//Player
+namespace player {
+
+	//typedef uint t;
+	enum t{ black = 0, white = 1, wrong = 2};
+	const uint cnt = 2;
+
+	inline t other(t pl) {
+		return t(pl ^ 1);
+	}
+	inline bool in_range(t pl) {
+		return pl < wrong;
+	}
+	inline t operator++(t& pl) { return (pl = t(pl+1)); }
+	inline void check(t pl) {
+		assertc (player_ac, (pl & (~1)) == 0);
+	}
+	inline string to_string(t pl) {
+		if(pl == black) {
+			return "#";
+		} else {
+			return "O";
+		}
+	}
+	istream& operator>> (istream& in, t& pl) {
+		string s;
+		in >> s;
+		if (s == "b" || s == "B" || s == "Black" || s == "BLACK "|| s == "black" || s == "#") { pl = black; return in; }
+		if (s == "w" || s == "W" || s == "White" || s == "WHITE "|| s == "white" || s == "O") { pl = white; return in; }
+		in.setstate (ios_base::badbit);
+		return in;
+	}
+	inline ostream& operator<< (ostream& out, t& pl) { out << to_string(pl); return out; }
+};
+typedef player::t Player;
+// faster than non-loop
+#define player_for_each(pl) \
+  for (Player pl = player::black; player::in_range(pl); ++pl)
+
+//------------------------------------------------------------------------------
+/*
+ * Color与Player对应，但是多了几种状态
+ *
+ */
+// class color
+namespace color {
+	typedef uint t;
+	enum {
+		black = 0, 
+		white = 1, 
+		empty = 2, 
+		off_board = 3, 
+		wrong = 40
+	};
+	const int cnt = 4;
+	inline t from_char(char c) {
+		switch (c) {
+			case '#': return black;
+			case 'O': return white;
+			case '.': return empty;
+			case '*': return off_board;
+			default : return wrong;
+		}
+	}
+	inline char to_char(t cl) {
+		switch (cl) {
+			case black:      return '#';
+			case white:      return 'O';
+			case empty:      return '.';
+			case off_board:  return ' ';
+			default : assertc (color_ac, false);
+		}
+		return '?';
+	}
+	inline void check(t cl) {
+		assertc (color_ac, (cl & (~3)) == 0); 
+	}
+	inline bool is_player(t cl) {
+		return cl <= white;
+	}
+	inline bool is_not_player(t cl) {
+		return cl > white;
+	}
+	inline bool in_range(t cl) {
+		return cl < cnt;
+	}
+	//inline t operator++(t& pl) { return (pl = t(pl+1));}
+}
+typedef color::t Color;
+// TODO test it for performance
+#define color_for_each(col) \
+  for (Color col = color::black; color::in_range(col); ++col)
 
 //--------------------------------------------------------------------------------
 
+/*
+ * 用一个uint表示一次Move,即在Vertex前面再加上一个表示Player的bit
+ */
 template<uint T> class Move {
 public:
 
-  const static uint cnt = white_player << Vertex<T>::bits_used | Vertex<T>::cnt;
+  const static uint cnt = player::white << Vertex<T>::bits_used | Vertex<T>::cnt;
  
   const static uint no_move_idx = 1;
 
@@ -328,7 +340,7 @@ public:
   }
 
   explicit Move () {
-    Move (black_player, Vertex<T>::any ());
+    Move (player::black, Vertex<T>::any ());
   }
 
   explicit Move (int idx_) {

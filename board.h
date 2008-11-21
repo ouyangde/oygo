@@ -54,6 +54,11 @@ public:
 
 
 // class NbrCounter
+/*
+ * 用12个bit来表示其邻点中black,white,empty数量
+ * 每4个bit表示一种情况的数量
+ * off_board的情况则看做既是black也是white
+ */
 
 
 class NbrCounter {
@@ -61,13 +66,13 @@ public:
 
   static const uint max = 4;                 // maximal number of neighbours
   static const uint f_size = 4;              // size in bits of each of 3 counters in nbr_cnt::t
-  static const uint f_mask = (1 << f_size) - 1;
-  static const uint f_shift_black = 0 * f_size;
+  static const uint f_shift_black = 0 * f_size; // 分别占4个bit
   static const uint f_shift_white = 1 * f_size;
   static const uint f_shift_empty = 2 * f_size;
-  static const uint black_inc_val = (1 << f_shift_black) - (1 << f_shift_empty);
+  static const uint f_mask = (1 << f_size) - 1; // 用于去除empty的位
+  static const uint black_inc_val = (1 << f_shift_black) - (1 << f_shift_empty); // black+,empty-
   static const uint white_inc_val = (1 << f_shift_white) - (1 << f_shift_empty);
-  static const uint off_board_inc_val = (1 << f_shift_black) + (1 << f_shift_white) - (1 << f_shift_empty);
+  static const uint off_board_inc_val = (1 << f_shift_black) + (1 << f_shift_white) - (1 << f_shift_empty); // empty-,b,w+
   
 public:
 
@@ -85,7 +90,8 @@ public:
       (empty_cnt << f_shift_empty);
   }
   
-  static const uint player_inc_tab [Player_cnt];
+  // 用于对player做map
+  static const uint player_inc_tab [player::cnt];
   void player_inc (Player player) { bitfield += player_inc_tab [player]; }
   void player_dec (Player player) { bitfield -= player_inc_tab [player]; }
   void off_board_inc () { bitfield += off_board_inc_val; }
@@ -95,7 +101,7 @@ public:
   static const uint f_shift [3];
   uint player_cnt (Player pl) const { return (bitfield >> f_shift [pl]) & f_mask; }
 
-  static const uint player_cnt_is_max_mask [Player_cnt];
+  static const uint player_cnt_is_max_mask [player::cnt];
   uint player_cnt_is_max (Player pl) const { 
     return 
       (player_cnt_is_max_mask [pl] & bitfield) == 
@@ -105,23 +111,23 @@ public:
   void check () {
     if (!nbr_cnt_ac) return;
     assert (empty_cnt () <= max);
-    assert (player_cnt (black_player) <= max);
-    assert (player_cnt (white_player) <= max);
+    assert (player_cnt (player::black) <= max);
+    assert (player_cnt (player::white) <= max);
   }
 };
 
 const uint NbrCounter::f_shift [3] = { 
   NbrCounter::f_shift_black, 
   NbrCounter::f_shift_white, 
-  NbrCounter::f_shift_empty, 
+  NbrCounter::f_shift_empty, //这个其实不需要
 };
 
-const uint NbrCounter::player_cnt_is_max_mask [Player_cnt] = {  // TODO player_Map
+const uint NbrCounter::player_cnt_is_max_mask [player::cnt] = {  // TODO player_Map
   (max << f_shift_black), 
   (max << f_shift_white) 
 };
 
-const uint NbrCounter::player_inc_tab [Player_cnt] = { NbrCounter::black_inc_val, NbrCounter::white_inc_val };
+const uint NbrCounter::player_inc_tab [player::cnt] = { NbrCounter::black_inc_val, NbrCounter::white_inc_val };
 
 
 // class Board
@@ -151,8 +157,8 @@ public:
   uint                         empty_v_cnt;
   uint                         last_empty_v_cnt;
 
-  uint			       player_v_cnt[Player_cnt]; // map Player to uint
-  Vertex<T>		       player_last_v[Player_cnt];// map Player to Vertex
+  uint			       player_v_cnt[player::cnt]; // map Player to uint
+  Vertex<T>		       player_last_v[player::cnt];// map Player to Vertex
 
   Hash                         hash;
   int                          komi;
@@ -194,7 +200,7 @@ public:                         // consistency checks
     if (!board_empty_v_ac) return;
 
     FastMap<Vertex<T>, bool> noticed;
-    uint exp_player_v_cnt[Player_cnt];
+    uint exp_player_v_cnt[player::cnt];
 
     vertex_for_each_all (v) noticed[v] = false;
 
@@ -208,12 +214,12 @@ public:                         // consistency checks
     player_for_each (pl) exp_player_v_cnt [pl] = 0;
 
     vertex_for_each_all (v) {
-      assert ((color_at[v] == color_empty) == noticed[v]);
-      if (color_at[v] == color_empty) {
+      assert ((color_at[v] == color::empty) == noticed[v]);
+      if (color_at[v] == color::empty) {
         assert (empty_pos[v] < empty_v_cnt);
         assert (empty_v [empty_pos[v]] == v);
       }
-      if (Color_is_player(color_at [v])) exp_player_v_cnt [color_at[v]]++;
+      if (color::is_player(color_at [v])) exp_player_v_cnt [color_at[v]]++;
     }
 
     player_for_each (pl) 
@@ -230,8 +236,8 @@ public:                         // consistency checks
     if (!board_color_at_ac) return;
 
     vertex_for_each_all (v) {
-      Color_check(color_at [v]);
-      assert ((color_at[v] != color_off_board) == (v.is_on_board ()));
+      color::check(color_at [v]);
+      assert ((color_at[v] != color::off_board) == (v.is_on_board ()));
     }
   }
 
@@ -242,10 +248,10 @@ public:                         // consistency checks
     vertex_for_each_all (v) {
       coord::t r;
       coord::t c;
-      uint nbr_color_cnt[Color_cnt];
+      uint nbr_color_cnt[color::cnt];
       uint expected_nbr_cnt;
 
-      if (color_at[v] == color_off_board) continue; // TODO is that right?
+      if (color_at[v] == color::off_board) continue; // TODO is that right?
 
       r = v.row ();
       c = v.col ();
@@ -258,11 +264,11 @@ public:                         // consistency checks
       vertex_for_each_nbr (v, nbr_v, nbr_color_cnt [color_at [nbr_v]]++);
           
       expected_nbr_cnt =        // definition of nbr_cnt[v]
-        + ((nbr_color_cnt [color_black] + nbr_color_cnt [color_off_board]) 
+        + ((nbr_color_cnt [color::black] + nbr_color_cnt [color::off_board]) 
            << NbrCounter::f_shift_black)
-        + ((nbr_color_cnt [color_white] + nbr_color_cnt [color_off_board])
+        + ((nbr_color_cnt [color::white] + nbr_color_cnt [color::off_board])
            << NbrCounter::f_shift_white)
-        + ((nbr_color_cnt [color_empty]) 
+        + ((nbr_color_cnt [color::empty]) 
            << NbrCounter::f_shift_empty);
     
       assert (nbr_cnt[v].bitfield == expected_nbr_cnt);
@@ -275,7 +281,7 @@ public:                         // consistency checks
 
     vertex_for_each_all (v) { // whether same color neighbours have same root and liberties
       // TODO what about off_board and empty?
-      if (Color_is_player(color_at [v])) {
+      if (color::is_player(color_at [v])) {
 
         assert (chain_lib_cnt[ chain_id [v]] != 0);
 
@@ -292,7 +298,7 @@ public:                         // consistency checks
     if (!chain_next_v_ac) return;
     vertex_for_each_all (v) {
       chain_next_v[v].check ();
-      if (!Color_is_player(color_at [v])) 
+      if (!color::is_player(color_at [v])) 
         assert (chain_next_v [v] == v);
     }
   }
@@ -316,7 +322,7 @@ public:                         // consistency checks
     if (!board_ac) return;
 
     vertex_for_each_all (v)
-      if (color_at[v] == color_empty)
+      if (color_at[v] == color::empty)
         assert (is_eyelike (player, v) || is_pseudo_legal (player, v) == false);
   }
 
@@ -340,22 +346,22 @@ public:                         // board interface
       player_last_v [pl] = Vertex<T>::any ();
     }
     move_no      = 0;
-    last_player  = white_player; // act player is other
+    last_player  = player::white; // act player is other
     last_move_status = play_ok;
     ko_v         = Vertex<T>::any ();
     vertex_for_each_all (v) {
-      color_at      [v] = color_off_board;
+      color_at      [v] = color::off_board;
       nbr_cnt       [v] = NbrCounter (0, 0, NbrCounter::max);
       chain_next_v  [v] = v;
       chain_id      [v] = v.get_idx ();    // TODO is it needed, is it usedt?
       chain_lib_cnt [v.get_idx ()] = NbrCounter::max; // TODO is it logical? (off_boards)
 
       if (v.is_on_board ()) {
-        color_at   [v]              = color_empty;
+        color_at   [v]              = color::empty;
         empty_pos  [v]              = empty_v_cnt;
         empty_v    [empty_v_cnt++]  = v;
 
-        off_board_cnt = 0;
+        off_board_cnt = 0;// 有多少个邻点不在board上
         vertex_for_each_nbr (v, nbr_v, {
             if (!nbr_v.is_on_board ()) 
               off_board_cnt++;
@@ -377,7 +383,7 @@ public:                         // board interface
     new_hash.set_zero ();
 
     vertex_for_each_all (v) {
-      if (Color_is_player(color_at [v])) {
+      if (color::is_player(color_at [v])) {
         new_hash ^= zobrist->of_pl_v ((Player)color_at [v], v);
       }
     }
@@ -415,7 +421,7 @@ public: // legality functions
 
     return 
       v == Vertex<T>::pass () || 
-      !nbr_cnt[v].player_cnt_is_max (Player_other(player)) || 
+      !nbr_cnt[v].player_cnt_is_max (player::other(player)) || 
       (!play_eye_is_ko (player, v) && 
        !play_eye_is_suicide (v));
   }
@@ -430,10 +436,10 @@ public: // legality functions
 
 
   bool is_eyelike (Player player, Vertex<T> v) { 
-    assertc (board_ac, color_at [v] == color_empty);
+    assertc (board_ac, color_at [v] == color::empty);
     if (! nbr_cnt[v].player_cnt_is_max (player)) return false;
 
-    int diag_color_cnt[Color_cnt]; // TODO
+    int diag_color_cnt[color::cnt]; // TODO
     color_for_each (col) 
       diag_color_cnt [col] = 0; // memset is slower
 
@@ -441,7 +447,7 @@ public: // legality functions
       diag_color_cnt [color_at [diag_v]]++;
     });
 
-    return diag_color_cnt [Color (Player_other(player))] + (diag_color_cnt [color_off_board] > 0) < 2;
+    return diag_color_cnt [Color (player::other(player))] + (diag_color_cnt [color::off_board] > 0) < 2;
   }
 
 
@@ -469,7 +475,7 @@ public: // play move functions
 
     v.check_is_on_board ();
 
-    if (color_at [v] != color_empty) 
+    if (color_at [v] != color::empty) 
       return false; 
 
     if (is_pseudo_legal (player,v) == false)
@@ -503,9 +509,9 @@ public: // play move functions
     }
     
     v.check_is_on_board ();
-    assertc (board_ac, color_at[v] == color_empty);
+    assertc (board_ac, color_at[v] == color::empty);
     
-    if (nbr_cnt[v].player_cnt_is_max (Player_other(player))) {
+    if (nbr_cnt[v].player_cnt_is_max (player::other(player))) {
       play_eye_legal (player, v);
     } else {
       play_not_eye (player, v);
@@ -550,7 +556,7 @@ public: // auxiliary functions
 
 
   bool play_eye_is_ko (Player player, Vertex<T> v) {
-    return (v == ko_v) & (player == Player_other(last_player));
+    return (v == ko_v) & (player == player::other(last_player));
   }
 
 
@@ -566,7 +572,7 @@ public: // auxiliary functions
   void play_not_eye (Player player, Vertex<T> v) {
     check ();
     v.check_is_on_board ();
-    assertc (board_ac, color_at[v] == color_empty);
+    assertc (board_ac, color_at[v] == color::empty);
 
     basic_play (player, v);
 
@@ -576,7 +582,7 @@ public: // auxiliary functions
 
       nbr_cnt [nbr_v].player_inc (player);
         
-      if (Color_is_player(color_at [nbr_v])) {
+      if (color::is_player(color_at [nbr_v])) {
         chain_lib_cnt [chain_id [nbr_v]] --; // This should be before 'if' to have good lib_cnt for empty vertices
       
         if (color_at [nbr_v] != Color (player)) { // same color of groups
@@ -666,7 +672,7 @@ public: // auxiliary functions
     old_color = color_at[v];
     act_v = v;
 
-    assertc (board_ac, Color_is_player(old_color));
+    assertc (board_ac, color::is_player(old_color));
 
     do {
       remove_stone (act_v);
@@ -708,7 +714,7 @@ public: // auxiliary functions
   void remove_stone (Vertex<T> v) {
     hash ^= zobrist->of_pl_v ((Player)color_at [v], v);
     player_v_cnt [color_at[v]]--;
-    color_at [v] = color_empty;
+    color_at [v] = color::empty;
 
     empty_pos [v] = empty_v_cnt;
     empty_v [empty_v_cnt++] = v;
@@ -721,18 +727,18 @@ public: // auxiliary functions
 public:                         // utils
 
 
-  Player act_player () const { return Player_other(last_player); } // TODO/FIXME last_player should be preserverd in undo function
+  Player act_player () const { return player::other(last_player); } // TODO/FIXME last_player should be preserverd in undo function
 
 
   bool both_player_pass () {
     return 
-      (player_last_v [black_player] == Vertex<T>::pass ()) & 
-      (player_last_v [white_player] == Vertex<T>::pass ());
+      (player_last_v [player::black] == Vertex<T>::pass ()) & 
+      (player_last_v [player::white] == Vertex<T>::pass ());
   }
 
 
   int approx_score () const {
-    return komi + player_v_cnt[black_player] -  player_v_cnt[white_player];
+    return komi + player_v_cnt[player::black] -  player_v_cnt[player::white];
   }
 
 
@@ -743,8 +749,8 @@ public:                         // utils
     int eye_score = 0;
 
     empty_v_for_each (this, v, {
-        eye_score += nbr_cnt[v].player_cnt_is_max (black_player);
-        eye_score -= nbr_cnt[v].player_cnt_is_max (white_player);
+        eye_score += nbr_cnt[v].player_cnt_is_max (player::black);
+        eye_score -= nbr_cnt[v].player_cnt_is_max (player::white);
     });
 
     return approx_score () + eye_score;
@@ -766,13 +772,13 @@ public:                         // utils
     //     Coloro_score [Color::off_board ()] = 0;
     //     return Coloro_score [color_at [v]];
     switch (color_at [v]) {
-    case color_black: return 1;
-    case color_white: return -1;
-    case color_empty: 
+    case color::black: return 1;
+    case color::white: return -1;
+    case color::empty: 
       return 
-        (nbr_cnt[v].player_cnt_is_max (black_player)) -
-        (nbr_cnt[v].player_cnt_is_max (white_player));
-    case color_off_board: return 0;
+        (nbr_cnt[v].player_cnt_is_max (player::black)) -
+        (nbr_cnt[v].player_cnt_is_max (player::white));
+    case color::off_board: return 0;
     default: assert (false);
     }
   }
@@ -795,8 +801,8 @@ public:                         // utils
       if (board_size >= 10 && board_size - row < 10) out << " ";
       os (coord::row_to_string<T> (row));
       coord_for_each (col) {
-        Vertex<T> v = Vertex<T> (row, col);
-        char ch = Color_to_char(color_at [v]);
+        Vertex<T> v = Vertex<T>(row, col);
+        char ch = color::to_char(color_at [v]);
         if      (v == mark_v)        o_left  (ch);
         else if (v == mark_v.E ())   o_right (ch);
         else                         os (ch);
