@@ -16,7 +16,7 @@ using namespace std;
 namespace simple_playout_benchmark {
 
 
-  uint win_cnt[Player_cnt];
+  uint win_cnt[player::cnt];
   uint                playout_ok_cnt;
   int                 playout_ok_score;
   PerformanceTimer    perf_timer;
@@ -96,11 +96,11 @@ namespace simple_playout_benchmark {
           << endl;
     }
 
-    out << "Black wins    = " << win_cnt [black_player] << endl
-        << "White wins    = " << win_cnt [white_player] << endl
+    out << "Black wins    = " << win_cnt [player::black] << endl
+        << "White wins    = " << win_cnt [player::white] << endl
         << "P(black win)  = " 
-        << float (win_cnt [black_player]) / 
-           float (win_cnt [black_player] + win_cnt [white_player]) 
+        << float (win_cnt [player::black]) / 
+           float (win_cnt [player::black] + win_cnt [player::white]) 
         << endl;
 
     float avg_score = float (playout_ok_score) / float (playout_ok_cnt);
@@ -127,6 +127,7 @@ int main (int argc, char** argv) {
   setvbuf (stderr, (char *)NULL, _IONBF, 0);
 
   Board<9> board;
+  
   ostringstream response;
   uint playout_cnt = 100000;
   simple_playout_benchmark::run<false> (&board, playout_cnt, response);
