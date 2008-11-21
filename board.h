@@ -802,7 +802,8 @@ public:                         // utils
       if (board_size >= 10 && board_size - row < 10) out << " ";
       os (coord::row_to_string<T> (row));
       coord_for_each (col) {
-        Vertex<T> v = Vertex<T>(row, col);
+        Vertex<T> v = Vertex<T>::of_coords(row, col);
+        //Vertex<T> v = Vertex<T>(row, col);
         char ch = color::to_char(color_at [v]);
         if      (v == mark_v)        o_left  (ch);
         else if (v == mark_v.E ())   o_right (ch);

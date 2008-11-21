@@ -68,12 +68,6 @@ public:
   explicit Vertex () { } // TODO is it needed
   explicit Vertex (uint _idx) { idx = _idx; }
 
- // TODO make this constructor a static function
-  Vertex (coord::t r, coord::t c) {
-    coord::check2<T> (r, c);
-    idx = (r+1) * dNS + (c+1) * dWE;
-  }
-
   uint get_idx () const { return idx; }
 
   bool operator== (Vertex other) const { return idx == other.idx; }
@@ -135,6 +129,17 @@ public:
   static Vertex pass   () { return Vertex (Vertex::pass_idx); }
   static Vertex any    () { return Vertex (Vertex::any_idx); }
   static Vertex resign () { return Vertex (Vertex::resign_idx); }
+  // TODO make this constructor a static function
+  /*
+  Vertex (coord::t r, coord::t c) {
+	  coord::check2<T> (r, c);
+	  idx = (r+1) * dNS + (c+1) * dWE;
+  }
+  */
+  static Vertex of_coords(coord::t r, coord::t c) {
+    coord::check2<T> (r, c);
+    return Vertex((r+1) * dNS + (c+1) * dWE);
+  }
 
   static Vertex of_sgf_coords (string s) {
     if (s == "") return pass ();
@@ -393,7 +398,8 @@ string to_string_2d (FastMap<Vertex<T>, T1>& map, int precision = 3) {
   
   coord_for_each (row) {
     coord_for_each (col) {
-      Vertex<T> v = Vertex<T> (row, col);
+      Vertex<T> v = Vertex<T>::of_coords (row, col);
+      //Vertex<T> v = Vertex<T> (row, col);
       out.precision(precision);
       out.width(precision + 3);
       out << map [v] << " ";
