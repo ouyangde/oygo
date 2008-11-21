@@ -46,11 +46,9 @@ mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = config.h
 CONFIG_CLEAN_FILES =
 PROGRAMS = $(noinst_PROGRAMS)
-am_oygo_OBJECTS = oygo-main.$(OBJEXT) oygo-defines.$(OBJEXT)
+am_oygo_OBJECTS = main.$(OBJEXT) defines.$(OBJEXT)
 oygo_OBJECTS = $(am_oygo_OBJECTS)
 oygo_LDADD = $(LDADD)
-oygo_LINK = $(CXXLD) $(oygo_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
-	$(LDFLAGS) -o $@
 DEFAULT_INCLUDES = -I.
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
@@ -87,7 +85,7 @@ CPP = gcc -E
 CPPFLAGS = 
 CXX = g++
 CXXDEPMODE = depmode=gcc3
-CXXFLAGS = -g -O2
+CXXFLAGS = -g -O2 -fomit-frame-pointer
 CYGPATH_W = cygpath -w
 DEFS = -DHAVE_CONFIG_H
 DEPDIR = .deps
@@ -163,7 +161,6 @@ target_alias =
 top_builddir = .
 top_srcdir = .
 oygo_SOURCES = main.cpp defines.cpp
-oygo_CXXFLAGS = -g -O3 -fomit-frame-pointer
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-am
 
@@ -224,7 +221,7 @@ clean-noinstPROGRAMS:
 	-test -z "$(noinst_PROGRAMS)" || rm -f $(noinst_PROGRAMS)
 oygo$(EXEEXT): $(oygo_OBJECTS) $(oygo_DEPENDENCIES) 
 	@rm -f oygo$(EXEEXT)
-	$(oygo_LINK) $(oygo_OBJECTS) $(oygo_LDADD) $(LIBS)
+	$(CXXLINK) $(oygo_OBJECTS) $(oygo_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -232,8 +229,8 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-include ./$(DEPDIR)/oygo-defines.Po
-include ./$(DEPDIR)/oygo-main.Po
+include ./$(DEPDIR)/defines.Po
+include ./$(DEPDIR)/main.Po
 
 .cpp.o:
 	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -248,34 +245,6 @@ include ./$(DEPDIR)/oygo-main.Po
 #	source='$<' object='$@' libtool=no \
 #	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) \
 #	$(CXXCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
-
-oygo-main.o: main.cpp
-	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(oygo_CXXFLAGS) $(CXXFLAGS) -MT oygo-main.o -MD -MP -MF $(DEPDIR)/oygo-main.Tpo -c -o oygo-main.o `test -f 'main.cpp' || echo '$(srcdir)/'`main.cpp
-	mv -f $(DEPDIR)/oygo-main.Tpo $(DEPDIR)/oygo-main.Po
-#	source='main.cpp' object='oygo-main.o' libtool=no \
-#	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) \
-#	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(oygo_CXXFLAGS) $(CXXFLAGS) -c -o oygo-main.o `test -f 'main.cpp' || echo '$(srcdir)/'`main.cpp
-
-oygo-main.obj: main.cpp
-	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(oygo_CXXFLAGS) $(CXXFLAGS) -MT oygo-main.obj -MD -MP -MF $(DEPDIR)/oygo-main.Tpo -c -o oygo-main.obj `if test -f 'main.cpp'; then $(CYGPATH_W) 'main.cpp'; else $(CYGPATH_W) '$(srcdir)/main.cpp'; fi`
-	mv -f $(DEPDIR)/oygo-main.Tpo $(DEPDIR)/oygo-main.Po
-#	source='main.cpp' object='oygo-main.obj' libtool=no \
-#	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) \
-#	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(oygo_CXXFLAGS) $(CXXFLAGS) -c -o oygo-main.obj `if test -f 'main.cpp'; then $(CYGPATH_W) 'main.cpp'; else $(CYGPATH_W) '$(srcdir)/main.cpp'; fi`
-
-oygo-defines.o: defines.cpp
-	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(oygo_CXXFLAGS) $(CXXFLAGS) -MT oygo-defines.o -MD -MP -MF $(DEPDIR)/oygo-defines.Tpo -c -o oygo-defines.o `test -f 'defines.cpp' || echo '$(srcdir)/'`defines.cpp
-	mv -f $(DEPDIR)/oygo-defines.Tpo $(DEPDIR)/oygo-defines.Po
-#	source='defines.cpp' object='oygo-defines.o' libtool=no \
-#	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) \
-#	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(oygo_CXXFLAGS) $(CXXFLAGS) -c -o oygo-defines.o `test -f 'defines.cpp' || echo '$(srcdir)/'`defines.cpp
-
-oygo-defines.obj: defines.cpp
-	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(oygo_CXXFLAGS) $(CXXFLAGS) -MT oygo-defines.obj -MD -MP -MF $(DEPDIR)/oygo-defines.Tpo -c -o oygo-defines.obj `if test -f 'defines.cpp'; then $(CYGPATH_W) 'defines.cpp'; else $(CYGPATH_W) '$(srcdir)/defines.cpp'; fi`
-	mv -f $(DEPDIR)/oygo-defines.Tpo $(DEPDIR)/oygo-defines.Po
-#	source='defines.cpp' object='oygo-defines.obj' libtool=no \
-#	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) \
-#	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(oygo_CXXFLAGS) $(CXXFLAGS) -c -o oygo-defines.obj `if test -f 'defines.cpp'; then $(CYGPATH_W) 'defines.cpp'; else $(CYGPATH_W) '$(srcdir)/defines.cpp'; fi`
 
 ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	list='$(SOURCES) $(HEADERS) $(LISP) $(TAGS_FILES)'; \
