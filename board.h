@@ -353,8 +353,8 @@ public:                         // board interface
       color_at      [v] = color::off_board;
       nbr_cnt       [v] = NbrCounter (0, 0, NbrCounter::max);
       chain_next_v  [v] = v;
-      chain_id      [v] = v.get_idx ();    // TODO is it needed, is it usedt?
-      chain_lib_cnt [v.get_idx ()] = NbrCounter::max; // TODO is it logical? (off_boards)
+      chain_id      [v] = v.get_idx();    // TODO is it needed, is it usedt?
+      chain_lib_cnt [v.get_idx()] = NbrCounter::max; // TODO is it logical? (off_boards)
 
       if (v.is_on_board ()) {
         color_at   [v]              = color::empty;
@@ -368,6 +368,7 @@ public:                         // board interface
         });
         rep (ii, off_board_cnt) 
           nbr_cnt [v].off_board_inc ();
+
       }
     }
 
@@ -706,8 +707,8 @@ public: // auxiliary functions
 
     assertc (chain_next_v_ac, chain_next_v[v] == v);
 
-    chain_id [v] = v.get_idx ();
-    chain_lib_cnt [v.get_idx ()] = nbr_cnt[v].empty_cnt ();
+    chain_id [v] = v.get_idx();
+    chain_lib_cnt [v.get_idx()] = nbr_cnt[v].empty_cnt ();
   }
 
 
@@ -718,7 +719,7 @@ public: // auxiliary functions
 
     empty_pos [v] = empty_v_cnt;
     empty_v [empty_v_cnt++] = v;
-    chain_id [v] = v.get_idx ();
+    chain_id [v] = v.get_idx();
 
     assertc (board_ac, empty_v_cnt < Vertex<T>::cnt);
   }

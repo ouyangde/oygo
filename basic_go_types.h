@@ -88,7 +88,7 @@ public:
 
   coord::t col () const { return idx % dNS - 1; }
 
-  // this usualy can be achieved quicker by color_at lookup
+  //TODO:this usualy can be achieved quicker by color_at lookup
   bool is_on_board () const {
     return coord::is_on_board<T> (row ()) & coord::is_on_board<T> (col ());
   }
@@ -102,10 +102,16 @@ public:
   Vertex E () const { return Vertex (idx + dWE); }
   Vertex S () const { return Vertex (idx + dNS); }
 
+  /*
   Vertex NW () const { return N ().W (); } // TODO can it be faster?
   Vertex NE () const { return N ().E (); } // only Go
   Vertex SW () const { return S ().W (); } // only Go
   Vertex SE () const { return S ().E (); }
+  */
+  Vertex NW () const { return Vertex (idx - dNS - dWE); }
+  Vertex NE () const { return Vertex (idx - dNS + dWE); }
+  Vertex SW () const { return Vertex (idx - dWE + dNS); }
+  Vertex SE () const { return Vertex (idx + dWE + dNS); }
 
   string to_string () const {
     coord::t r;
@@ -147,7 +153,8 @@ public:
 };
 
 // TODO of_gtp_string
-template<uint T> istream& operator>> (istream& in, Vertex<T>& v) {
+template<uint T> 
+istream& operator>> (istream& in, Vertex<T>& v) {
   const uint board_size = T;
   char c;
   int n;
@@ -178,16 +185,16 @@ template<uint T> istream& operator>> (istream& in, Vertex<T>& v) {
   return in;
 }
 
-template<uint T> ostream& operator<< (ostream& out, Vertex<T>& v) { out << v.to_string (); return out; }
+template<uint T> 
+ostream& operator<< (ostream& out, Vertex<T>& v) { out << v.to_string (); return out; }
 
-
-#define vertex_for_each_all(vv) for (Vertex<T> vv = Vertex<T>(0); vv.in_range (); vv.next ()) // TODO 0 works??? // TODO player the same way!
+#define vertex_for_each_all(vv) for (Vertex<T> vv = Vertex<T>(0); vv.in_range (); vv.next()) // TODO 0 works??? // TODO player the same way!
 
 // misses some offboard vertices (for speed) 
 #define vertex_for_each_faster(vv)                                  \
   for (Vertex<T> vv = Vertex<T>(Vertex<T>::dNS+Vertex<T>::dWE);                 \
-       vv.get_idx () <= T * (Vertex<T>::dNS + Vertex<T>::dWE);   \
-       vv.next ())
+       vv.get_idx() <= T * (Vertex<T>::dNS + Vertex<T>::dWE);   \
+       vv.next())
 
 
 #define vertex_for_each_nbr(center_v, nbr_v, block) {   \
@@ -255,7 +262,7 @@ namespace player {
 		in.setstate (ios_base::badbit);
 		return in;
 	}
-	inline ostream& operator<< (ostream& out, t& pl) { out << to_string(pl); return out; }
+	ostream& operator<< (ostream& out, t& pl) { out << to_string(pl); return out; }
 };
 typedef player::t Player;
 // faster than non-loop
@@ -336,7 +343,7 @@ public:
   }
 
   explicit Move (Player player, Vertex<T> v) { 
-    idx = (player << Vertex<T>::bits_used) | v.get_idx ();
+    idx = (player << Vertex<T>::bits_used) | v.get_idx();
   }
 
   explicit Move () {
@@ -369,7 +376,8 @@ public:
 };
 
 
-template<uint T> istream& operator>> (istream& in, Move<T>& m) {
+template<uint T> 
+istream& operator>> (istream& in, Move<T>& m) {
   Player pl;
   Vertex<T> v;
   if (!(in >> pl >> v)) return in;
@@ -396,6 +404,6 @@ string to_string_2d (FastMap<Vertex<T>, T1>& map, int precision = 3) {
 }
     
 
-#define move_for_each_all(m) for (Move m = Move (0); m.in_range (); m.next ())
+#define move_for_each_all(m) for (Move m = Move (0); m.in_range (); m.next())
 
 /********************************************************************************/
