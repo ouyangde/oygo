@@ -83,7 +83,7 @@ namespace simple_playout_benchmark {
     out << "Initial board:" << endl;
     out << "komi " << start_board->get_komi () << " for white" << endl;
     
-    out << start_board->to_string ();
+    //out << start_board->to_string ();
     out << endl;
     
     if (score_per_vertex) {

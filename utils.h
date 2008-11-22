@@ -178,8 +178,8 @@ public:
 template <typename idx_t, typename elt_t> class FastMap {
   elt_t tab [idx_t::cnt];
 public:
-  elt_t& operator[] (idx_t pl)             { return tab [pl.get_idx ()]; }
-  const elt_t& operator[] (idx_t pl) const { return tab [pl.get_idx ()]; }
+  elt_t& operator[] (idx_t pl)             { return tab [pl]; }
+  const elt_t& operator[] (idx_t pl) const { return tab [pl]; }
 };
 
 

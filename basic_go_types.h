@@ -39,7 +39,8 @@ namespace coord { // TODO class
 
 }
 #define coord_for_each(rc) \
-  for (coord::t rc = 0; rc < int(T); rc = coord::t (rc+1))
+  for (coord::t rc = 0; rc < int(T); rc++)
+  //for (coord::t rc = 0; rc < int(T); rc = coord::t (rc+1))
 
 //--------------------------------------------------------------------------------
 
@@ -68,13 +69,13 @@ public:
   explicit Vertex () { } // TODO is it needed
   explicit Vertex (uint _idx) { idx = _idx; }
 
-  uint get_idx () const { return idx; }
+  operator uint() const { return idx; }
 
   bool operator== (Vertex other) const { return idx == other.idx; }
   bool operator!= (Vertex other) const { return idx != other.idx; }
 
   bool in_range ()          const { return idx < cnt; }
-  void next ()                    { idx++; }
+  Vertex& operator++() { ++idx; return *this;}
 
   void check ()             const { assertc (vertex_ac, in_range ()); }
 
@@ -193,13 +194,13 @@ istream& operator>> (istream& in, Vertex<T>& v) {
 template<uint T> 
 ostream& operator<< (ostream& out, Vertex<T>& v) { out << v.to_string (); return out; }
 
-#define vertex_for_each_all(vv) for (Vertex<T> vv = Vertex<T>(0); vv.in_range (); vv.next()) // TODO 0 works??? // TODO player the same way!
+#define vertex_for_each_all(vv) for (Vertex<T> vv = Vertex<T>(0); vv.in_range (); ++vv) // TODO 0 works??? // TODO player the same way!
 
 // misses some offboard vertices (for speed) 
 #define vertex_for_each_faster(vv)                                  \
   for (Vertex<T> vv = Vertex<T>(Vertex<T>::dNS+Vertex<T>::dWE);                 \
-       vv.get_idx() <= T * (Vertex<T>::dNS + Vertex<T>::dWE);   \
-       vv.next())
+       vv <= T * (Vertex<T>::dNS + Vertex<T>::dWE);   \
+       ++vv)
 
 
 #define vertex_for_each_nbr(center_v, nbr_v, block) {   \
@@ -348,7 +349,7 @@ public:
   }
 
   explicit Move (Player player, Vertex<T> v) { 
-    idx = (player << Vertex<T>::bits_used) | v.get_idx();
+    idx = (player << Vertex<T>::bits_used) | v;
   }
 
   explicit Move () {
@@ -371,13 +372,13 @@ public:
     return Player_to_string(get_player ()) + " " + get_vertex ().to_string ();
   }
 
-  uint get_idx () const { return idx; }
+  operator uint() const { return idx; }
 
   bool operator== (Move other) const { return idx == other.idx; }
   bool operator!= (Move other) const { return idx != other.idx; }
 
   bool in_range ()          const { return idx < cnt; }
-  void next ()                    { idx++; }
+  Move& operator++() { ++idx; return *this;}
 };
 
 
@@ -410,6 +411,6 @@ string to_string_2d (FastMap<Vertex<T>, T1>& map, int precision = 3) {
 }
     
 
-#define move_for_each_all(m) for (Move m = Move (0); m.in_range (); m.next())
+#define move_for_each_all(m) for (Move m = Move (0); m.in_range (); ++m)
 
 /********************************************************************************/
