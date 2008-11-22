@@ -1,3 +1,11 @@
+#ifndef _UTILS_H_
+#define _UTILS_H_
+#include <sys/resource.h>
+#include <string>
+#include <sstream>
+#include <iostream>
+#include <iomanip>
+using namespace std;
 // standard macros
 
 #define qq(...) fprintf(stdout, __VA_ARGS__); fflush (stdout);
@@ -57,13 +65,14 @@ public:
   }
   
   double ticks () { return sample_sum / sample_cnt; }
-
+/*
   string to_string (float unit = 1.0) {
     ostringstream s;
     s.precision(15);
     s << "avg CC = " << ticks () / unit << " (cnt = " << sample_cnt << ")";
     return s.str ();
   }
+  */
 };
 #define cc_measure(cc_clock, instr) { cc_clock.start (); instr; cc_clock.stop (); }
 
@@ -186,13 +195,13 @@ public:
 // some usefull functions
 
 
-float get_seconds () {
+inline float get_seconds () {
   rusage usage [1];
   getrusage (RUSAGE_SELF, usage);
   return float(usage->ru_utime.tv_sec) + float(usage->ru_utime.tv_usec) / 1000000.0;
 }
 
-void fatal_error (const char* s) {
+inline void fatal_error (const char* s) {
   cerr << "Fatal error: " << s << endl;
   assert (false);
   exit (1);
@@ -228,3 +237,4 @@ void fatal_error (const char* s) {
 #define all_inline
 
 #endif
+#endif // _UTILS_H_

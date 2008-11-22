@@ -1,236 +1,163 @@
+#ifndef _BASIC_GO_TYPES_H_
+#define _BASIC_GO_TYPES_H_
+
 /*
  * 坐标类，坐标由两个int值表示，-1表示棋盘外的坐标
  */
 namespace coord { // TODO class
 
-  typedef int t;
+	typedef int t;
 
-  template<uint T> bool is_ok (t coord) { return (coord < int (T)) & (coord >= -1); }
-  template<uint T> bool is_on_board (t coord) { return uint (coord) < T; }
+	template<uint T> bool is_ok (t coord) { return (coord < int (T)) & (coord >= -1); }
+	template<uint T> bool is_on_board (t coord) { return uint (coord) < T; }
 
-  template<uint T> void check (t coo) { 
-    unused (coo);
-    assertc (coord_ac, is_ok<T> (coo)); 
-  }
+	template<uint T> void check (t coo) { 
+		unused (coo);
+		assertc (coord_ac, is_ok<T> (coo)); 
+	}
 
-  template<uint T> void check2 (t row, t col) { 
-    if (!coord_ac) return;
-    if (row == -1 && col == -1) return;
-    assertc (coord_ac, is_on_board<T> (row)); 
-    assertc (coord_ac, is_on_board<T> (col)); 
-  }
-
-  string col_tab = "ABCDEFGHJKLMNOPQRSTUVWXYZ";
-
-  // TODO to gtp string
-  template<uint T> string row_to_string (t row) {
-    check<T> (row);
-    ostringstream ss;
-    ss << T - row;
-    return ss.str ();
-  }
-
-  template<uint T> string col_to_string (t col) {
-    check<T> (col);
-    ostringstream ss;
-    ss << col_tab [col];
-    return ss.str ();
-  }
+	template<uint T> void check2 (t row, t col) { 
+		if (!coord_ac) return;
+		if (row == -1 && col == -1) return;
+		assertc (coord_ac, is_on_board<T> (row)); 
+		assertc (coord_ac, is_on_board<T> (col)); 
+	}
 
 }
 #define coord_for_each(rc) \
-  for (coord::t rc = 0; rc < int(T); rc++)
-  //for (coord::t rc = 0; rc < int(T); rc = coord::t (rc+1))
+	for (coord::t rc = 0; rc < int(T); rc++)
+//for (coord::t rc = 0; rc < int(T); rc = coord::t (rc+1))
 
 //--------------------------------------------------------------------------------
 
 /*
  * 棋盘上的交叉点，参数T是棋盘大小，用一个uint存储
  */
-template<uint T> class Vertex {
+template<uint T> 
+class Vertex {
 
-  //static_assert (cnt <= (1 << bits_used));
-  //static_assert (cnt > (1 << (bits_used-1)));
+	//static_assert (cnt <= (1 << bits_used));
+	//static_assert (cnt > (1 << (bits_used-1)));
 
-  uint idx;
+	uint idx;
 
 public:
 
-  const static uint dNS = (T + 2);
-  const static uint dWE = 1;
+	const static uint dNS = (T + 2);
+	const static uint dWE = 1;
 
-  const static uint bits_used = 9;     // on 19x19 cnt == 441 < 512 == 1 << 9;
-  const static uint pass_idx = 0;
-  const static uint any_idx  = 1; // TODO any
-  const static uint resign_idx = 2;
+	const static uint bits_used = 9;     // on 19x19 cnt == 441 < 512 == 1 << 9;
+	const static uint pass_idx = 0;
+	const static uint any_idx  = 1; // TODO any
+	const static uint resign_idx = 2;
 
-  const static uint cnt = (T + 2) * (T + 2);
+	const static uint cnt = (T + 2) * (T + 2);
 
-  explicit Vertex () { } // TODO is it needed
-  explicit Vertex (uint _idx) { idx = _idx; }
+	explicit Vertex () { } // TODO is it needed
+	explicit Vertex (uint _idx) { idx = _idx; }
 
-  operator uint() const { return idx; }
+	operator uint() const { return idx; }
 
-  bool operator== (Vertex other) const { return idx == other.idx; }
-  bool operator!= (Vertex other) const { return idx != other.idx; }
+	bool operator== (Vertex other) const { return idx == other.idx; }
+	bool operator!= (Vertex other) const { return idx != other.idx; }
 
-  bool in_range ()          const { return idx < cnt; }
-  Vertex& operator++() { ++idx; return *this;}
+	bool in_range ()          const { return idx < cnt; }
+	Vertex& operator++() { ++idx; return *this;}
 
-  void check ()             const { assertc (vertex_ac, in_range ()); }
+	void check ()             const { assertc (vertex_ac, in_range ()); }
 
-  coord::t row () const { return idx / dNS - 1; }
+	coord::t row () const { return idx / dNS - 1; }
 
-  coord::t col () const { return idx % dNS - 1; }
+	coord::t col () const { return idx % dNS - 1; }
 
-  //TODO:this usualy can be achieved quicker by color_at lookup
-  bool is_on_board () const {
-    return coord::is_on_board<T> (row ()) & coord::is_on_board<T> (col ());
-  }
+	//TODO:this usualy can be achieved quicker by color_at lookup
+	bool is_on_board () const {
+		return coord::is_on_board<T> (row ()) & coord::is_on_board<T> (col ());
+	}
 
-  void check_is_on_board () const { 
-    assertc (vertex_ac, is_on_board ()); 
-  }
+	void check_is_on_board () const { 
+		assertc (vertex_ac, is_on_board ()); 
+	}
 
-  Vertex N () const { return Vertex (idx - dNS); }
-  Vertex W () const { return Vertex (idx - dWE); }
-  Vertex E () const { return Vertex (idx + dWE); }
-  Vertex S () const { return Vertex (idx + dNS); }
+	Vertex N () const { return Vertex (idx - dNS); }
+	Vertex W () const { return Vertex (idx - dWE); }
+	Vertex E () const { return Vertex (idx + dWE); }
+	Vertex S () const { return Vertex (idx + dNS); }
 
-  /*
-  Vertex NW () const { return N ().W (); } // TODO can it be faster?
-  Vertex NE () const { return N ().E (); } // only Go
-  Vertex SW () const { return S ().W (); } // only Go
-  Vertex SE () const { return S ().E (); }
-  */
-  Vertex NW () const { return Vertex (idx - dNS - dWE); }
-  Vertex NE () const { return Vertex (idx - dNS + dWE); }
-  Vertex SW () const { return Vertex (idx - dWE + dNS); }
-  Vertex SE () const { return Vertex (idx + dWE + dNS); }
+	/*
+	   Vertex NW () const { return N ().W (); } // TODO can it be faster?
+	   Vertex NE () const { return N ().E (); } // only Go
+	   Vertex SW () const { return S ().W (); } // only Go
+	   Vertex SE () const { return S ().E (); }
+	   */
+	Vertex NW () const { return Vertex (idx - dNS - dWE); }
+	Vertex NE () const { return Vertex (idx - dNS + dWE); }
+	Vertex SW () const { return Vertex (idx - dWE + dNS); }
+	Vertex SE () const { return Vertex (idx + dWE + dNS); }
 
-  string to_string () const {
-    coord::t r;
-    coord::t c;
-    
-    if (idx == pass_idx) {
-      return "pass";
-    } else if (idx == any_idx) {
-      return "any";
-    } else if (idx == resign_idx) {
-      return "resign";
-    } else {
-      r = row ();
-      c = col ();
-      ostringstream ss;
-      ss << coord::col_to_string<T> (c) << coord::row_to_string<T> (r);
-      return ss.str ();
-    }
-  }
 
-  static Vertex pass   () { return Vertex (Vertex::pass_idx); }
-  static Vertex any    () { return Vertex (Vertex::any_idx); }
-  static Vertex resign () { return Vertex (Vertex::resign_idx); }
-  // TODO make this constructor a static function
-  /*
-  Vertex (coord::t r, coord::t c) {
-	  coord::check2<T> (r, c);
-	  idx = (r+1) * dNS + (c+1) * dWE;
-  }
-  */
-  static Vertex of_coords(coord::t r, coord::t c) {
-    coord::check2<T> (r, c);
-    return Vertex((r+1) * dNS + (c+1) * dWE);
-  }
+	static Vertex pass   () { return Vertex (Vertex::pass_idx); }
+	static Vertex any    () { return Vertex (Vertex::any_idx); }
+	static Vertex resign () { return Vertex (Vertex::resign_idx); }
+	// TODO make this constructor a static function
+	/*
+	   Vertex (coord::t r, coord::t c) {
+	   coord::check2<T> (r, c);
+	   idx = (r+1) * dNS + (c+1) * dWE;
+	   }
+	   */
+	static Vertex of_coords(coord::t r, coord::t c) {
+		coord::check2<T> (r, c);
+		return Vertex((r+1) * dNS + (c+1) * dWE);
+	}
 
-  static Vertex of_sgf_coords (string s) {
-    if (s == "") return pass ();
-    if (s == "tt" && T <= 19) return pass ();
-    if (s.size () != 2 ) return any ();
-    coord::t col = s[0] - 'a';
-    coord::t row = s[1] - 'a';
-    
-    if (coord::is_on_board<T> (row) &&
-        coord::is_on_board<T> (col)) {
-      return Vertex (row, col);
-    } else {
-      return any ();
-    }
-  }
 };
 
-// TODO of_gtp_string
-template<uint T> 
-istream& operator>> (istream& in, Vertex<T>& v) {
-  const uint board_size = T;
-  char c;
-  int n;
-  coord::t row, col;
 
-  string str;
-  if (!(in >> str)) return in;
-  if (str == "pass" || str == "PASS" || str == "Pass") { v = Vertex<T>::pass (); return in; }
-  if (str == "resign" || str == "RESIGN" || str == "Resign") { v = Vertex<T>::resign (); return in; }
 
-  istringstream in2 (str);
-  if (!(in2 >> c >> n)) return in;
-
-  row = board_size - n;
-  
-  col = 0;
-  while (col < int (coord::col_tab.size ())) {
-    if (coord::col_tab[col] == c || coord::col_tab[col] -'A' + 'a' == c ) break;
-    col++;
-  }
-  
-  if (col == int (coord::col_tab.size ())) {
-    in.setstate (ios_base::badbit);
-    return in;
-  }
-
-  v = Vertex<T> (row, col);
-  return in;
-}
-
-template<uint T> 
-ostream& operator<< (ostream& out, Vertex<T>& v) { out << v.to_string (); return out; }
-
-#define vertex_for_each_all(vv) for (Vertex<T> vv = Vertex<T>(0); vv.in_range (); ++vv) // TODO 0 works??? // TODO player the same way!
+#define vertex_for_each_all(vv) \
+	for (Vertex<T> vv = Vertex<T>(0); vv.in_range (); ++vv) // TODO 0 works??? // TODO player the same way!
 
 // misses some offboard vertices (for speed) 
 #define vertex_for_each_faster(vv)                                  \
-  for (Vertex<T> vv = Vertex<T>(Vertex<T>::dNS+Vertex<T>::dWE);                 \
-       vv <= T * (Vertex<T>::dNS + Vertex<T>::dWE);   \
-       ++vv)
+	for (Vertex<T> vv = Vertex<T>(Vertex<T>::dNS+Vertex<T>::dWE);                 \
+		vv <= T * (Vertex<T>::dNS + Vertex<T>::dWE);   \
+	++vv)
 
+/*
+ * 邻点
+ */
+#define vertex_for_each_nbr(center_v, nbr_v, block) {       \
+	center_v.check_is_on_board ();                      \
+	Vertex<T> nbr_v;                                    \
+	nbr_v = center_v.N (); block;                       \
+	nbr_v = center_v.W (); block;                       \
+	nbr_v = center_v.E (); block;                       \
+	nbr_v = center_v.S (); block;                       \
+}
 
-#define vertex_for_each_nbr(center_v, nbr_v, block) {   \
-    center_v.check_is_on_board ();                      \
-    Vertex<T> nbr_v;                                       \
-    nbr_v = center_v.N (); block;                       \
-    nbr_v = center_v.W (); block;                       \
-    nbr_v = center_v.E (); block;                       \
-    nbr_v = center_v.S (); block;                       \
-  }
-
+/*
+ * 对角邻点
+ */
 #define vertex_for_each_diag_nbr(center_v, nbr_v, block) {      \
-    center_v.check_is_on_board ();                              \
-    Vertex<T> nbr_v;                                               \
-    nbr_v = center_v.NW (); block;                              \
-    nbr_v = center_v.NE (); block;                              \
-    nbr_v = center_v.SW (); block;                              \
-    nbr_v = center_v.SE (); block;                              \
-  }
+	center_v.check_is_on_board ();                          \
+	Vertex<T> nbr_v;                                        \
+	nbr_v = center_v.NW (); block;                          \
+	nbr_v = center_v.NE (); block;                          \
+	nbr_v = center_v.SW (); block;                          \
+	nbr_v = center_v.SE (); block;                          \
+}
 
-#define player_vertex_for_each_9_nbr(center_v, pl, nbr_v, i) {  \
-    v::check_is_on_board (center_v);                            \
-    Move    nbr_v;                                              \
-    player_for_each (pl) {                                      \
-      nbr_v = center_v;                                         \
-      i;                                                        \
-      vertex_for_each_nbr      (center_v, nbr_v, i);            \
-      vertex_for_each_diag_nbr (center_v, nbr_v, i);            \
-    }                                                           \
-  }
+#define player_vertex_for_each_9_nbr(center_v, pl, nbr_v, i) {      \
+	v::check_is_on_board (center_v);                            \
+	Move    nbr_v;                                              \
+	player_for_each (pl) {                                      \
+		nbr_v = center_v;                                   \
+		i;                                                  \
+		vertex_for_each_nbr      (center_v, nbr_v, i);      \
+		vertex_for_each_diag_nbr (center_v, nbr_v, i);      \
+	}                                                           \
+}
 
 //------------------------------------------------------------------------------
 /*
@@ -253,27 +180,11 @@ namespace player {
 	inline void check(t pl) {
 		assertc (player_ac, (pl & (~1)) == 0);
 	}
-	inline string to_string(t pl) {
-		if(pl == black) {
-			return "#";
-		} else {
-			return "O";
-		}
-	}
-	istream& operator>> (istream& in, t& pl) {
-		string s;
-		in >> s;
-		if (s == "b" || s == "B" || s == "Black" || s == "BLACK "|| s == "black" || s == "#") { pl = black; return in; }
-		if (s == "w" || s == "W" || s == "White" || s == "WHITE "|| s == "white" || s == "O") { pl = white; return in; }
-		in.setstate (ios_base::badbit);
-		return in;
-	}
-	ostream& operator<< (ostream& out, t& pl) { out << to_string(pl); return out; }
 };
 typedef player::t Player;
 // faster than non-loop
 #define player_for_each(pl) \
-  for (Player pl = player::black; player::in_range(pl); ++pl)
+	for (Player pl = player::black; player::in_range(pl); ++pl)
 
 //------------------------------------------------------------------------------
 /*
@@ -327,7 +238,7 @@ namespace color {
 typedef color::t Color;
 // TODO test it for performance
 #define color_for_each(col) \
-  for (Color col = color::black; color::in_range(col); ++col)
+	for (Color col = color::black; color::in_range(col); ++col)
 
 //--------------------------------------------------------------------------------
 
@@ -337,80 +248,53 @@ typedef color::t Color;
 template<uint T> class Move {
 public:
 
-  const static uint cnt = player::white << Vertex<T>::bits_used | Vertex<T>::cnt;
- 
-  const static uint no_move_idx = 1;
+	const static uint cnt = player::white << Vertex<T>::bits_used | Vertex<T>::cnt;
 
-  uint idx;
+	const static uint no_move_idx = 1;
 
-  void check () {
-    Player (idx >> Vertex<T>::bits_used);
-    Vertex<T> (idx & ((1 << Vertex<T>::bits_used) - 1)).check ();
-  }
+	uint idx;
 
-  explicit Move (Player player, Vertex<T> v) { 
-    idx = (player << Vertex<T>::bits_used) | v;
-  }
+	void check () {
+		Player (idx >> Vertex<T>::bits_used);
+		Vertex<T> (idx & ((1 << Vertex<T>::bits_used) - 1)).check ();
+	}
 
-  explicit Move () {
-    Move (player::black, Vertex<T>::any ());
-  }
+	explicit Move (Player player, Vertex<T> v) { 
+		idx = (player << Vertex<T>::bits_used) | v;
+	}
 
-  explicit Move (int idx_) {
-    idx = idx_;
-  }
+	explicit Move () {
+		Move (player::black, Vertex<T>::any ());
+	}
 
-  Player get_player () { 
-    return Player (idx >> Vertex<T>::bits_used);
-  }
+	explicit Move (int idx_) {
+		idx = idx_;
+	}
 
-  Vertex<T> get_vertex () { 
-    return Vertex<T> (idx & ((1 << ::Vertex<T>::bits_used) - 1)) ; 
-  }
+	Player get_player () { 
+		return Player (idx >> Vertex<T>::bits_used);
+	}
 
-  string to_string () {
-    return Player_to_string(get_player ()) + " " + get_vertex ().to_string ();
-  }
+	Vertex<T> get_vertex () { 
+		return Vertex<T> (idx & ((1 << ::Vertex<T>::bits_used) - 1)) ; 
+	}
 
-  operator uint() const { return idx; }
+	string to_string () {
+		return Player_to_string(get_player ()) + " " + get_vertex ().to_string ();
+	}
 
-  bool operator== (Move other) const { return idx == other.idx; }
-  bool operator!= (Move other) const { return idx != other.idx; }
+	operator uint() const { return idx; }
 
-  bool in_range ()          const { return idx < cnt; }
-  Move& operator++() { ++idx; return *this;}
+	bool operator== (Move other) const { return idx == other.idx; }
+	bool operator!= (Move other) const { return idx != other.idx; }
+
+	bool in_range ()          const { return idx < cnt; }
+	Move& operator++() { ++idx; return *this;}
 };
 
-
-template<uint T> 
-istream& operator>> (istream& in, Move<T>& m) {
-  Player pl;
-  Vertex<T> v;
-  if (!(in >> pl >> v)) return in;
-  m = Move<T> (pl, v);
-  return in;
-}
-
-  
-template <typename T1,uint T>
-string to_string_2d (FastMap<Vertex<T>, T1>& map, int precision = 3) {
-  ostringstream out;
-  out << setiosflags (ios_base::fixed) ;
-  
-  coord_for_each (row) {
-    coord_for_each (col) {
-      Vertex<T> v = Vertex<T>::of_coords (row, col);
-      //Vertex<T> v = Vertex<T> (row, col);
-      out.precision(precision);
-      out.width(precision + 3);
-      out << map [v] << " ";
-    }
-    out << endl;
-  }
-  return out.str ();
-}
     
 
 #define move_for_each_all(m) for (Move m = Move (0); m.in_range (); ++m)
 
 /********************************************************************************/
+#endif // _BASIC_GO_TYPES_H_
