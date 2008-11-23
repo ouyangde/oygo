@@ -48,7 +48,27 @@ ostream& operator<< (ostream& out, Player& pl) {
 	out << to_string(pl); 
 	return out; 
 }
-
+//------------------------
+//Color
+Color from_char(char c) {
+	switch (c) {
+		case '#': return color::black;
+		case 'O': return color::white;
+		case '.': return color::empty;
+		case '*': return color::off_board;
+		default : return color::wrong;
+	}
+}
+char to_char(Color cl) {
+	switch (cl) {
+		case color::black:      return '#';
+		case color::white:      return 'O';
+		case color::empty:      return '.';
+		case color::off_board:  return ' ';
+		default : assertc (color_ac, false);
+	}
+	return '?';
+}
 //----------------------------
 //Move
 template<uint T> 
@@ -166,7 +186,7 @@ string to_string (const Board<T>& idx, Vertex<T> mark_v = Vertex<T>::any ()) {
 		os (::row_to_string<T> (row));
 		coord_for_each (col) {
 			Vertex<T> v = Vertex<T>::of_coords(row, col);
-			char ch = color::to_char(idx.color_at [v]);
+			char ch = ::to_char(idx.color_at [v]);
 			if      (v == mark_v)        o_left  (ch);
 			else if (v == mark_v.E ())   o_right (ch);
 			else                         os (ch);

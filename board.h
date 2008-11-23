@@ -161,13 +161,14 @@ public:
 	uint                         empty_v_cnt;
 	uint                         last_empty_v_cnt;
 
+	// 记录Player占据的数量
 	uint			       player_v_cnt[player::cnt]; // map Player to uint
 	Vertex<T>		       player_last_v[player::cnt];// map Player to Vertex
 
 	Hash                         hash;
 	int                          komi;
 
-	Vertex<T>                       ko_v;             // vertex forbidden by ko
+	Vertex<T>                       ko_v;             // vertex forbidden by ko(劫)
 
 	Player                       last_player;      // player who made the last play (other::player is forbidden to retake)
 	uint                         move_no;
@@ -505,7 +506,7 @@ public: // play move functions
 	// accept pass
 	// will ignore simple-ko ban
 	// will play single stone suicide
-	void play_legal (Player player, Vertex<T> v) all_inline {
+	all_inline void play_legal (Player player, Vertex<T> v) {
 		check ();
 
 		if (v == Vertex<T>::pass ()) {

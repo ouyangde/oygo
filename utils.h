@@ -1,10 +1,10 @@
 #ifndef _UTILS_H_
 #define _UTILS_H_
 #include <sys/resource.h>
-#include <string>
-#include <sstream>
 #include <iostream>
-#include <iomanip>
+//#include <string>
+//#include <sstream>
+//#include <iomanip>
 using namespace std;
 // standard macros
 
@@ -28,51 +28,51 @@ const float large_float = 1000000000000.0;
 // PerformanceTimer
 
 class PerformanceTimer {
-  double  sample_cnt;
-  double  sample_sum;
-  uint64  start_time;
-  double  overhead;
+	double  sample_cnt;
+	double  sample_sum;
+	uint64  start_time;
+	double  overhead;
 public:
 
-  PerformanceTimer () {
-    reset ();
-    uint64 t1, t2;
-    t1 = get_cc_time ();
-    t2 = get_cc_time ();
-    overhead = double (t2 - t1);
-  }
+	PerformanceTimer () {
+		reset ();
+		uint64 t1, t2;
+		t1 = get_cc_time ();
+		t2 = get_cc_time ();
+		overhead = double (t2 - t1);
+	}
 
-  void reset () {
-    sample_cnt = 0;
-    sample_sum = 0;
-  }
+	void reset () {
+		sample_cnt = 0;
+		sample_sum = 0;
+	}
 
-  uint64 get_cc_time () volatile {
-    uint64 ret;
-    __asm__ __volatile__("rdtsc" : "=A" (ret) : :);
-    return ret;
-  }
+	uint64 get_cc_time () volatile {
+		uint64 ret;
+		__asm__ __volatile__("rdtsc" : "=A" (ret) : :);
+		return ret;
+	}
 
-  void start () {
-    start_time = get_cc_time ();
-  }
+	void start () {
+		start_time = get_cc_time ();
+	}
 
-  void stop () {
-    uint64 stop_time;
-    stop_time = get_cc_time ();
-    sample_cnt += 1.0;
-    sample_sum += double (stop_time - start_time) - overhead;
-  }
-  
-  double ticks () { return sample_sum / sample_cnt; }
-/*
-  string to_string (float unit = 1.0) {
-    ostringstream s;
-    s.precision(15);
-    s << "avg CC = " << ticks () / unit << " (cnt = " << sample_cnt << ")";
-    return s.str ();
-  }
-  */
+	void stop () {
+		uint64 stop_time;
+		stop_time = get_cc_time ();
+		sample_cnt += 1.0;
+		sample_sum += double (stop_time - start_time) - overhead;
+	}
+
+	double ticks () { return sample_sum / sample_cnt; }
+	/*
+	   string to_string (float unit = 1.0) {
+	   ostringstream s;
+	   s.precision(15);
+	   s << "avg CC = " << ticks () / unit << " (cnt = " << sample_cnt << ")";
+	   return s.str ();
+	   }
+	   */
 };
 #define cc_measure(cc_clock, instr) { cc_clock.start (); instr; cc_clock.stop (); }
 
@@ -82,113 +82,115 @@ public:
 
 class PmRandom {             // Park - Miller "minimal standard" 
 
-  static const int cnt = (uint(1)<<31) - 1;  
+	static const int cnt = (uint(1)<<31) - 1;  
 
-  uint seed;
-  //tr1::minstd_rand0 mt; // this is eqivalent when #include <tr1/random>
+	uint seed;
+	//tr1::minstd_rand0 mt; // this is eqivalent when #include <tr1/random>
 
 public:
 
-  PmRandom (uint seed_ = 12345) //: mt (seed_) 
-  { seed = seed_; }
+	PmRandom (uint seed_ = 12345) //: mt (seed_) 
+	{ seed = seed_; }
 
-  void set_seed (uint _seed) { seed = _seed; }
-  uint get_seed () { return seed; }
+	void set_seed (uint _seed) { seed = _seed; }
+	uint get_seed () { return seed; }
 
-  uint rand_int () {       // a number between  0 ... cnt - 1
-    uint hi, lo;
-    lo = 16807 * (seed & 0xffff);
-    hi = 16807 * (seed >> 16);
-    lo += (hi & 0x7fff) << 16;
-    lo += hi >> 15;
-    seed = (lo & 0x7FFFFFFF) + (lo >> 31);
-    return seed;
-    //return mt (); // equivalen
-  }
+	uint rand_int () {       // a number between  0 ... cnt - 1
+		uint hi, lo;
+		lo = 16807 * (seed & 0xffff);
+		hi = 16807 * (seed >> 16);
+		lo += (hi & 0x7fff) << 16;
+		lo += hi >> 15;
+		seed = (lo & 0x7FFFFFFF) + (lo >> 31);
+		return seed;
+		//return mt (); // equivalen
+	}
 
-  // n must be between 1 .. (1<<16) + 1
-  inline uint rand_int (uint n) { // 0 .. n-1
-    assertc (pm_ac, n > 0);
-    assertc (pm_ac, n <= (1<<16)+1);
-    return ((rand_int () & 0xffff) * n) >> 16;
-  }
+	// n must be between 1 .. (1<<16) + 1
+	inline uint rand_int (uint n) { // 0 .. n-1
+		assertc (pm_ac, n > 0);
+		assertc (pm_ac, n <= (1<<16)+1);
+		return ((rand_int () & 0xffff) * n) >> 16;
+	}
 
-  void test () {
-    uint start = rand_int ();
-    
-    uint n = 1;
-    uint max = 0;
-    uint sum = start;
-    
-    while (true) {
-      uint r = rand_int ();
-      if (r == start) break;
-      n++;
-      sum += r;
-      if (max < r) max = r;
-    }
-    printf ("n = %d\n", n);
-    printf ("max = %d\n", max);
-    printf ("sum = %d\n", sum);
-  }
+	void test () {
+		uint start = rand_int ();
 
-  void test2 (uint k, uint n) {
-    uint bucket [k];
+		uint n = 1;
+		uint max = 0;
+		uint sum = start;
 
-    rep (ii, k)  bucket [ii] = 0;
-    rep (ii, n) {
-      uint r = rand_int (k);
-      assert (r < k);
-      bucket [r] ++;
-    }
-    rep (ii, k)  printf ("%d\n", bucket [ii]);
-  }
+		while (true) {
+			uint r = rand_int ();
+			if (r == start) break;
+			n++;
+			sum += r;
+			if (max < r) max = r;
+		}
+		printf ("n = %d\n", n);
+		printf ("max = %d\n", max);
+		printf ("sum = %d\n", sum);
+	}
+
+	void test2 (uint k, uint n) {
+		uint bucket [k];
+
+		rep (ii, k)  bucket [ii] = 0;
+		rep (ii, n) {
+			uint r = rand_int (k);
+			assert (r < k);
+			bucket [r] ++;
+		}
+		rep (ii, k)  printf ("%d\n", bucket [ii]);
+	}
 
 };
 
 
 // TODO use Stack in Board
-template <typename elt_t, uint _max_size> class Stack {
+template <typename elt_t, uint _max_size> 
+class Stack {
 public:
-  elt_t tab [_max_size];
-  uint size;
+	elt_t tab [_max_size];
+	uint size;
 
-  Stack () {
-    size = 0;
-  }
+	Stack () {
+		size = 0;
+	}
 
-  void check () const { 
-    assertc (stack_ac, size <= _max_size);
-  }
+	void check () const { 
+		assertc (stack_ac, size <= _max_size);
+	}
 
-  bool is_empty () const { return size == 0; }
+	bool is_empty () const { return size == 0; }
 
-  elt_t& top () { assertc (stack_ac, size > 0); return tab [size-1]; }
+	elt_t& top () { assertc (stack_ac, size > 0); return tab [size-1]; }
 
-  void   push_back (elt_t& elt) { tab [size++] = elt; check (); }
+	void   push_back (elt_t& elt) { tab [size++] = elt; check (); }
 
 
-  elt_t pop_random (PmRandom& pm) { 
-    assertc (stack_ac, size > 0); 
-    uint idx = pm.rand_int (size);
-    elt_t elt = tab [idx];
-    size--;
-    tab [idx] = tab [size];
-    return elt; 
-  }
+	elt_t pop_random (PmRandom& pm) { 
+		assertc (stack_ac, size > 0); 
+		uint idx = pm.rand_int (size);
+		elt_t elt = tab [idx];
+		size--;
+		tab [idx] = tab [size];
+		return elt; 
+	}
 
-  void   pop () { size--; check (); }
+	void   pop () { size--; check (); }
 
 };
 
 
 // very simple and useful FastMap
 
-template <typename idx_t, typename elt_t> class FastMap {
-  elt_t tab [idx_t::cnt];
+template <typename idx_t, typename elt_t> 
+class FastMap {
+	elt_t tab [idx_t::cnt];
 public:
-  elt_t& operator[] (idx_t pl)             { return tab [pl]; }
-  const elt_t& operator[] (idx_t pl) const { return tab [pl]; }
+	elt_t& operator[] (idx_t pl)             { return tab [pl]; }
+	const elt_t& operator[] (idx_t pl) const { return tab [pl]; }
 };
 
 
@@ -196,15 +198,15 @@ public:
 
 
 inline float get_seconds () {
-  rusage usage [1];
-  getrusage (RUSAGE_SELF, usage);
-  return float(usage->ru_utime.tv_sec) + float(usage->ru_utime.tv_usec) / 1000000.0;
+	rusage usage [1];
+	getrusage (RUSAGE_SELF, usage);
+	return float(usage->ru_utime.tv_sec) + float(usage->ru_utime.tv_usec) / 1000000.0;
 }
 
 inline void fatal_error (const char* s) {
-  cerr << "Fatal error: " << s << endl;
-  assert (false);
-  exit (1);
+	cerr << "Fatal error: " << s << endl;
+	assert (false);
+	exit (1);
 }
 
 // g++ extensions

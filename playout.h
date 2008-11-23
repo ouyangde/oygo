@@ -16,16 +16,19 @@ public:
 	void play_move () {
 		policy->prepare_vertex ();
 
+		Player   act_player = board->act_player ();
 		while (true) {
-			Player   act_player = board->act_player ();
+			//Player   act_player = board->act_player ();
 			Vertex<T>   v          = policy->next_vertex ();
 
+			// 简单的判断是否合法，但是有误判
 			if (board->is_pseudo_legal (act_player, v) == false) {
 				policy->bad_vertex (v);
 				continue;
 			} else {
 				board->play_legal (act_player, v);
 				policy->played_vertex (v);
+				act_player = board->act_player ();
 				break;
 			}
 		}
@@ -71,7 +74,7 @@ protected:
 
 public:
 
-	SimplePolicy () : board (NULL),pm(123) { }
+	SimplePolicy () : board (NULL),pm(time(NULL)) { }
 
 	void begin_playout (Board<T>* board_) { 
 		board = board_;

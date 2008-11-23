@@ -2,6 +2,72 @@
 #define _BASIC_GO_TYPES_H_
 
 /*
+ * 包含了基本的Player,Color,coord,Vertex,Move类
+ */
+
+//------------------------------------------------------------------------------
+/*
+ * Player,使用位运算加速计算另一方:other
+ */
+//Player
+namespace player {
+
+	//typedef uint t;
+	enum t{ black = 0, white = 1, wrong = 2};
+	const uint cnt = 2;
+
+	inline t other(t pl) {
+		return t(pl ^ 1);
+	}
+	inline bool in_range(t pl) {
+		return pl < wrong;
+	}
+	inline t operator++(t& pl) { return (pl = t(pl+1)); }
+	inline void check(t pl) {
+		assertc (player_ac, (pl & (~1)) == 0);
+	}
+};
+typedef player::t Player;
+// faster than non-loop
+#define player_for_each(pl) \
+	for (Player pl = player::black; player::in_range(pl); ++pl)
+
+//------------------------------------------------------------------------------
+/*
+ * Color与Player对应，但是多了几种状态
+ *
+ */
+// class color
+namespace color {
+	typedef uint t;
+	enum {
+		black = 0, 
+		white = 1, 
+		empty = 2, 
+		off_board = 3, 
+		wrong = 40
+	};
+	const int cnt = 4;
+	inline void check(t cl) {
+		assertc (color_ac, (cl & (~3)) == 0); 
+	}
+	inline bool is_player(t cl) {
+		return cl <= white;
+	}
+	inline bool is_not_player(t cl) {
+		return cl > white;
+	}
+	inline bool in_range(t cl) {
+		return cl < cnt;
+	}
+	//inline t operator++(t& pl) { return (pl = t(pl+1));}
+}
+typedef color::t Color;
+// TODO test it for performance
+#define color_for_each(col) \
+	for (Color col = color::black; color::in_range(col); ++col)
+
+/*
  * 坐标类，坐标由两个int值表示，-1表示棋盘外的坐标
  */
 namespace coord { // TODO class
@@ -158,88 +224,6 @@ public:
 		vertex_for_each_diag_nbr (center_v, nbr_v, i);      \
 	}                                                           \
 }
-
-//------------------------------------------------------------------------------
-/*
- * Player,使用位运算加速计算另一方:other
- */
-//Player
-namespace player {
-
-	//typedef uint t;
-	enum t{ black = 0, white = 1, wrong = 2};
-	const uint cnt = 2;
-
-	inline t other(t pl) {
-		return t(pl ^ 1);
-	}
-	inline bool in_range(t pl) {
-		return pl < wrong;
-	}
-	inline t operator++(t& pl) { return (pl = t(pl+1)); }
-	inline void check(t pl) {
-		assertc (player_ac, (pl & (~1)) == 0);
-	}
-};
-typedef player::t Player;
-// faster than non-loop
-#define player_for_each(pl) \
-	for (Player pl = player::black; player::in_range(pl); ++pl)
-
-//------------------------------------------------------------------------------
-/*
- * Color与Player对应，但是多了几种状态
- *
- */
-// class color
-namespace color {
-	typedef uint t;
-	enum {
-		black = 0, 
-		white = 1, 
-		empty = 2, 
-		off_board = 3, 
-		wrong = 40
-	};
-	const int cnt = 4;
-	inline t from_char(char c) {
-		switch (c) {
-			case '#': return black;
-			case 'O': return white;
-			case '.': return empty;
-			case '*': return off_board;
-			default : return wrong;
-		}
-	}
-	inline char to_char(t cl) {
-		switch (cl) {
-			case black:      return '#';
-			case white:      return 'O';
-			case empty:      return '.';
-			case off_board:  return ' ';
-			default : assertc (color_ac, false);
-		}
-		return '?';
-	}
-	inline void check(t cl) {
-		assertc (color_ac, (cl & (~3)) == 0); 
-	}
-	inline bool is_player(t cl) {
-		return cl <= white;
-	}
-	inline bool is_not_player(t cl) {
-		return cl > white;
-	}
-	inline bool in_range(t cl) {
-		return cl < cnt;
-	}
-	//inline t operator++(t& pl) { return (pl = t(pl+1));}
-}
-typedef color::t Color;
-// TODO test it for performance
-#define color_for_each(col) \
-	for (Color col = color::black; color::in_range(col); ++col)
-
 //--------------------------------------------------------------------------------
 
 /*
