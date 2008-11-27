@@ -149,15 +149,15 @@ public:
 	static const uint max_game_length     = board_area * 4;
 	static const Zobrist<T> zobrist[1];
 
-	FastMap<Vertex<T>, Color>       color_at;
-	FastMap<Vertex<T>, NbrCounter>  nbr_cnt; // incremental, for fast eye checking
-	FastMap<Vertex<T>, uint>        empty_pos;
+	FastMap<Vertex<T>, Color>       color_at; // 每个点的颜色，这是棋盘的基本结构
+	FastMap<Vertex<T>, NbrCounter>  nbr_cnt; // incremental, for fast eye checking 每个点的邻点数
+	FastMap<Vertex<T>, uint>        empty_pos; // 如果一个点是empty，记录其在empty_v中的索引值
 	FastMap<Vertex<T>, Vertex<T> >      chain_next_v;
 
-	uint                         chain_lib_cnt [Vertex<T>::cnt]; // indexed by chain_id
-	FastMap<Vertex<T>, uint>        chain_id;
+	uint                         chain_lib_cnt [Vertex<T>::cnt]; // indexed by chain_id 棋串的气数
+	FastMap<Vertex<T>, uint>        chain_id; // 每个点所属的棋串id
   
-	Vertex<T>                       empty_v [board_area];
+	Vertex<T>                       empty_v [board_area]; // 棋盘上的空点
 	uint                         empty_v_cnt;
 	uint                         last_empty_v_cnt;
 
@@ -178,7 +178,7 @@ public:
 
 public:                         // macros
 
-
+// 对所有空点
   #define empty_v_for_each(board, vv, i) {                              \
       Vertex<T> vv = Vertex<T>::any ();                                       \
       rep (ev_i, (board)->empty_v_cnt) {                                \
@@ -187,7 +187,7 @@ public:                         // macros
       }                                                                 \
     }
 
-  
+// 对所有空点以及pass
   #define empty_v_for_each_and_pass(board, vv, i) {                     \
       Vertex<T> vv = Vertex<T>::pass ();                                      \
       i;                                                                \
@@ -201,7 +201,7 @@ public:                         // macros
 public:                         // consistency checks
 
 
-	void check_empty_v () const {
+	void check_empty_v () const { //检查color_at,empty_pos,empty_v的一致性
 		if (!board_empty_v_ac) return;
 
 		FastMap<Vertex<T>, bool> noticed;
@@ -237,7 +237,7 @@ public:                         // consistency checks
 	}
 
 
-	void check_color_at () const {
+	void check_color_at () const { // 棋盘上的点不能是off_board
 		if (!board_color_at_ac) return;
 
 		vertex_for_each_all (v) {
@@ -247,7 +247,7 @@ public:                         // consistency checks
 	}
 
 
-	void check_nbr_cnt () const {
+	void check_nbr_cnt () const { // 按照邻点的定义检查一遍nbr_cnt是否正确
 		if (!board_nbr_cnt_ac) return;
 
 		vertex_for_each_all (v) {
@@ -285,13 +285,13 @@ public:                         // consistency checks
 		if (!chain_at_ac) return;
 
 		vertex_for_each_all (v) { // whether same color neighbours have same root and liberties
-			// TODO what about off_board and empty?
+			// TODO what about off_board and empty? 可以不用管
 			if (color::is_player(color_at [v])) {
 
-				assert (chain_lib_cnt[ chain_id [v]] != 0);
+				assert (chain_lib_cnt[ chain_id [v]] != 0); // player所属的串气不为0
 
 				vertex_for_each_nbr (v, nbr_v, {
-						if (color_at[v] == color_at[nbr_v]) 
+						if (color_at[v] == color_at[nbr_v]) // 同色邻点属于同一串
 						assert (chain_id [v] == chain_id [nbr_v]);
 						});
 			}
@@ -309,7 +309,7 @@ public:                         // consistency checks
 	}
 
 
-	void check () const {
+	void check () const { // 检查整个棋盘一致性
 		if (!board_ac) return;
 
 		check_empty_v       ();
@@ -326,7 +326,7 @@ public:                         // consistency checks
 
 		if (!board_ac) return;
 
-		vertex_for_each_all (v)
+		vertex_for_each_all (v) // 确认对于该player来说，剩余的空点要么是眼，要么禁入
 			if (color_at[v] == color::empty)
 				assert (is_eyelike (player, v) || is_pseudo_legal (player, v) == false);
 	}
@@ -335,7 +335,7 @@ public:                         // consistency checks
 public:                         // board interface
 
 
-	Board () { 
+	Board () { // TODO: 可以考虑预先建立全局空棋盘来优化性能
 		clear (); 
 		cout << ""; // TODO remove this stupid statement
 	}
@@ -355,6 +355,7 @@ public:                         // board interface
 		last_move_status = play_ok;
 		ko_v         = Vertex<T>::any ();
 		vertex_for_each_all (v) {
+			// 先初始化棋盘外的点
 			color_at      [v] = color::off_board;
 			nbr_cnt       [v] = NbrCounter (0, 0, NbrCounter::max);
 			chain_next_v  [v] = v;
@@ -362,6 +363,7 @@ public:                         // board interface
 			chain_lib_cnt [v] = NbrCounter::max; // TODO is it logical? (off_boards)
 
 			if (v.is_on_board ()) {
+				// 登记空点
 				color_at   [v]              = color::empty;
 				empty_pos  [v]              = empty_v_cnt;
 				empty_v    [empty_v_cnt++]  = v;
@@ -371,6 +373,7 @@ public:                         // board interface
 						if (!nbr_v.is_on_board ()) 
 						off_board_cnt++;
 						});
+				// 登记邻点数
 				rep (ii, off_board_cnt) 
 					nbr_cnt [v].off_board_inc ();
 
@@ -383,7 +386,7 @@ public:                         // board interface
 	}
 
 
-	Hash recalc_hash () const {
+	Hash recalc_hash () const { // 将所有的移动(Move)异或起来(^=)
 		Hash new_hash;
 
 		new_hash.set_zero ();
@@ -398,7 +401,7 @@ public:                         // board interface
 	}
 
 
-	void load (const Board* save_board) { 
+	void load (const Board* save_board) { // 快速拷贝棋盘，要求棋盘实现为浅拷贝
 		memcpy(this, save_board, sizeof(Board)); 
 		check ();
 	}
@@ -421,10 +424,13 @@ public: // legality functions
 	// it has to point to empty vertexand empty
 	// can't recognize play_suicide
 	all_inline 
-	bool is_pseudo_legal (Player player, Vertex<T> v) {
+	bool is_pseudo_legal (Player player, Vertex<T> v) { // 不严格的禁入点探测
 		check ();
 		//v.check_is_on_board (); // TODO check v = pass || onboard
 
+		// 1 pass
+		// 2 不在对方包围中(含真眼和假眼)
+		// 3 不是劫并且不是填对方的单眼
 		return 
 			v == Vertex<T>::pass () || 
 			!nbr_cnt[v].player_cnt_is_max (player::other(player)) || 
@@ -441,7 +447,12 @@ public: // legality functions
 	}
 
 
-	bool is_eyelike (Player player, Vertex<T> v) { 
+	// MC模拟时仅考虑不填自己的眼,对于填自己空或者缩小眼位之类的则不管
+	bool is_eyelike (Player player, Vertex<T> v) { // 是否像一个眼
+		// 1 邻点是否全是己方棋子
+		// 2 肩上的对方棋子数少于2(边角上少于1)
+		// 缺点：无法判断环形棋块,
+		// TODO:是否会错过故意填眼的妙招??
 		assertc (board_ac, color_at [v] == color::empty);
 		if (! nbr_cnt[v].player_cnt_is_max (player)) return false;
 
@@ -449,6 +460,7 @@ public: // legality functions
 		color_for_each (col) 
 			diag_color_cnt [col] = 0; // memset is slower
 
+		// 肩
 		vertex_for_each_diag_nbr (v, diag_v, {
 				diag_color_cnt [color_at [diag_v]]++;
 				});
@@ -458,7 +470,7 @@ public: // legality functions
 
 
 	// this is very very slow function
-	bool is_hash_repeated () {
+	bool is_hash_repeated () { // 根据历史棋步重下一遍来判断全局同形,果然很慢。为什么不预存hash值呢
 		Board tmp_board;
 		rep (mn, move_no-1) {
 			tmp_board.play_legal (move_history [mn].get_player (), move_history [mn].get_vertex ());
@@ -570,7 +582,7 @@ public: // auxiliary functions
 	bool play_eye_is_suicide (Vertex<T> v) {
 		uint all_nbr_live = true;
 		vertex_for_each_nbr (v, nbr_v, all_nbr_live &= (--chain_lib_cnt [chain_id [nbr_v]] != 0));
-		vertex_for_each_nbr (v, nbr_v, chain_lib_cnt [chain_id [nbr_v]]++);
+		vertex_for_each_nbr (v, nbr_v, chain_lib_cnt [chain_id [nbr_v]]++); //TODO: 能否更快
 		return all_nbr_live;
 	}
 
@@ -612,13 +624,14 @@ public: // auxiliary functions
 			assertc (board_ac, last_empty_v_cnt - empty_v_cnt == 1);
 			remove_chain(v);
 			assertc (board_ac, last_empty_v_cnt - empty_v_cnt > 0);
-			last_move_status = play_suicide;
+			last_move_status = play_suicide;//TODO: 为何要先下这一手再undo呢?
 		} else {
 			last_move_status = play_ok;
 		}
 	}
 
 
+	// 在对方眼的位置下子（忽略因为劫而导致的禁入情况，因为调用前判断过了）
 	no_inline
 	void play_eye_legal (Player player, Vertex<T> v) {
 		vertex_for_each_nbr (v, nbr_v, chain_lib_cnt [chain_id [nbr_v]]--);
@@ -667,7 +680,7 @@ public: // auxiliary functions
 			act_v = chain_next_v [act_v];
 		} while (act_v != v_new);
 
-		swap (chain_next_v[v_base], chain_next_v[v_new]);
+		swap (chain_next_v[v_base], chain_next_v[v_new]);// TODO:没看懂
 	}
 
 
