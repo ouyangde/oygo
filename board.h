@@ -393,7 +393,7 @@ public:                         // board interface
 
 		vertex_for_each_all (v) {
 			if (color::is_player(color_at [v])) {
-				new_hash ^= zobrist->of_pl_v ((Player)color_at [v], v);
+				new_hash ^= zobrist->of_pl_v (color::to_player(color_at[v]), v);
 			}
 		}
 
@@ -704,7 +704,7 @@ public: // auxiliary functions
 
 		do {
 			vertex_for_each_nbr (act_v, nbr_v, {
-				nbr_cnt [nbr_v].player_dec ((Player)old_color);
+				nbr_cnt [nbr_v].player_dec (color::to_player(old_color));
 				chain_lib_cnt [chain_id [nbr_v]]++;
 			});
 
@@ -733,7 +733,7 @@ public: // auxiliary functions
 
 
 	void remove_stone (Vertex<T> v) {
-		hash ^= zobrist->of_pl_v ((Player)color_at [v], v);
+		hash ^= zobrist->of_pl_v (color::to_player(color_at[v]), v);
 		player_v_cnt [color_at[v]]--;
 		color_at [v] = color::empty;
 

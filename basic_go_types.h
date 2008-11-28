@@ -57,6 +57,9 @@ namespace color {
 	inline bool is_not_player(t cl) {
 		return cl > white;
 	}
+	inline Player to_player(t cl) {
+		return (Player)cl;
+	}
 	inline bool in_range(t cl) {
 		return cl < cnt;
 	}
@@ -263,9 +266,6 @@ public:
 		return Vertex<T> (idx & ((1 << ::Vertex<T>::bits_used) - 1)) ; 
 	}
 
-	string to_string () {
-		return Player_to_string(get_player ()) + " " + get_vertex ().to_string ();
-	}
 
 	operator uint() const { return idx; }
 

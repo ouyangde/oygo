@@ -79,6 +79,10 @@ istream& operator>> (istream& in, Move<T>& m) {
 	m = Move<T> (pl, v);
 	return in;
 }
+template<uint T>
+string to_string (Move<T>& m) {
+	return to_string(m.get_player()) + " " + to_string(m.get_vertex ());
+}
 //----------------------------
 //Vertex
 template<uint T> 
