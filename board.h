@@ -1,6 +1,7 @@
 #ifndef _BOARD_H_
 #define _BOARD_H_
-
+#include <math.h>
+#include "basic_go_types.h"
 // class Hash
 class Hash {
 public:
@@ -59,53 +60,28 @@ public:
  * 每4个bit表示一种情况的数量
  * off_board的情况则看做既是black也是white
  */
-
-
 class NbrCounter {
 public:
-
+	uint8 bitfield;
 	static const uint max = 4;                 // maximal number of neighbours
-	static const uint f_size = 4;              // size in bits of each of 3 counters in nbr_cnt::t
-	static const uint f_shift_black = 0 * f_size; // 分别占4个bit
-	static const uint f_shift_white = 1 * f_size;
-	static const uint f_shift_empty = 2 * f_size;
-	static const uint f_mask = (1 << f_size) - 1; // 用于去除empty的位
-	static const uint black_inc_val = (1 << f_shift_black) - (1 << f_shift_empty); // black+,empty-
-	static const uint white_inc_val = (1 << f_shift_white) - (1 << f_shift_empty);
-	static const uint off_board_inc_val = (1 << f_shift_black) + (1 << f_shift_white) - (1 << f_shift_empty); // empty-,b,w+
+	static const uint cnt = 256;
+	NbrCounter ():bitfield(0x00) { }
 
-public:
-
-	uint bitfield;
-
-	NbrCounter () { }
-
-	NbrCounter (uint black_cnt, uint white_cnt, uint empty_cnt) {
-		assertc (nbr_cnt_ac, black_cnt <= max);
-		assertc (nbr_cnt_ac, white_cnt <= max);
-		assertc (nbr_cnt_ac, empty_cnt <= max);
-		bitfield = 
-			(black_cnt << f_shift_black) +
-			(white_cnt << f_shift_white) +
-			(empty_cnt << f_shift_empty);
+	void player_inc (Player player, uint i) { 
+		bitfield |= (player << i); 
 	}
+	void player_dec (Player player, uint i) { 
+		bitfield &= ~(color::off_board << i); 
+	}
+	void off_board_inc (uint i) { 
+		bitfield |= (color::off_board << i); 
+	}
+	static const uint cnt_map[player::cnt][cnt];
 
-	// 用于对player做map
-	static const uint player_inc_tab [player::cnt];
-	void player_inc (Player player) { bitfield += player_inc_tab [player]; }
-	void player_dec (Player player) { bitfield -= player_inc_tab [player]; }
-	void off_board_inc () { bitfield += off_board_inc_val; }
-
-	uint empty_cnt  () const { return bitfield >> f_shift_empty; }
-
-	static const uint f_shift [3];
-	uint player_cnt (Player pl) const { return (bitfield >> f_shift [pl]) & f_mask; }
-
-	static const uint player_cnt_is_max_mask [player::cnt];
+	uint empty_cnt  () const { return cnt_map[0][bitfield]; }
+	uint player_cnt (Player pl) const { return cnt_map[pl][bitfield]; }
 	uint player_cnt_is_max (Player pl) const { 
-		return 
-			(player_cnt_is_max_mask [pl] & bitfield) == 
-			player_cnt_is_max_mask [pl]; 
+		return cnt_map[pl][bitfield] == max;
 	}
 
 	void check () {
@@ -114,25 +90,28 @@ public:
 		assert (player_cnt (player::black) <= max);
 		assert (player_cnt (player::white) <= max);
 	}
+	static void output_cnt_map() {
+		for(int i = 0; i < 3; i++) {
+			printf("{");
+			for(int j = 0; j < 256; j++) {
+				if((j % 16) == 0) {
+					printf("\n");
+				}
+				int count = 0;
+				for(int n = 0; n < 8; n+= 2) {
+					int b = ((j >> n) & 3);
+					if(i == 0) {
+						if(b == 0) count++;
+					} else {
+						if((b & i) == i) count++;
+					}
+				}
+				printf("%d,",count);
+			}
+			printf("\n},\n");
+		}
+	}
 };
-
-const uint NbrCounter::f_shift[3] = { 
-	NbrCounter::f_shift_black, 
-	NbrCounter::f_shift_white, 
-	NbrCounter::f_shift_empty, //这个其实不需要
-};
-// TODO player_Map
-const uint NbrCounter::player_cnt_is_max_mask[player::cnt] = {  
-	max << f_shift_black, 
-	max << f_shift_white 
-};
-
-const uint NbrCounter::player_inc_tab [player::cnt] = { 
-	NbrCounter::black_inc_val, 
-	NbrCounter::white_inc_val
-};
-
-
 // class Board
 
 
@@ -224,7 +203,7 @@ public:                         // consistency checks
 				assert (empty_pos[v] < empty_v_cnt);
 				assert (empty_v [empty_pos[v]] == v);
 			}
-			if (color::is_player(color_at [v])) exp_player_v_cnt [color_at[v]]++;
+			if (color::is_player(color_at [v])) exp_player_v_cnt [color::to_player(color_at[v])]++;
 		}
 
 		player_for_each (pl) 
@@ -263,11 +242,11 @@ public:                         // consistency checks
 
 			assert (coord::is_on_board<T> (r)); // checking the macro
 			assert (coord::is_on_board<T> (c));
-
 			color_for_each (col) nbr_color_cnt [col] = 0;
 
-			vertex_for_each_nbr (v, nbr_v, nbr_color_cnt [color_at [nbr_v]]++);
+			vertex_for_each_nbr (v, nbr_v, i, nbr_color_cnt [color_at [nbr_v]]++);
 
+/*
 			expected_nbr_cnt =        // definition of nbr_cnt[v]
 				+ ((nbr_color_cnt [color::black] + nbr_color_cnt [color::off_board]) 
 						<< NbrCounter::f_shift_black)
@@ -276,7 +255,10 @@ public:                         // consistency checks
 				+ ((nbr_color_cnt [color::empty]) 
 						<< NbrCounter::f_shift_empty);
 
-			assert (nbr_cnt[v].bitfield == expected_nbr_cnt);
+*/
+			assert (nbr_cnt[v].player_cnt(player::black) == (nbr_color_cnt [color::black] + nbr_color_cnt [color::off_board]));
+			assert (nbr_cnt[v].player_cnt(player::white) == (nbr_color_cnt [color::white] + nbr_color_cnt [color::off_board]));
+			assert (nbr_cnt[v].empty_cnt() == (nbr_color_cnt [color::empty]));
 		}
 	}
 
@@ -290,7 +272,7 @@ public:                         // consistency checks
 
 				assert (chain_lib_cnt[ chain_id [v]] != 0); // player所属的串气不为0
 
-				vertex_for_each_nbr (v, nbr_v, {
+				vertex_for_each_nbr (v, nbr_v,i, {
 						if (color_at[v] == color_at[nbr_v]) // 同色邻点属于同一串
 						assert (chain_id [v] == chain_id [nbr_v]);
 						});
@@ -357,7 +339,7 @@ public:                         // board interface
 		vertex_for_each_all (v) {
 			// 先初始化棋盘外的点
 			color_at      [v] = color::off_board;
-			nbr_cnt       [v] = NbrCounter (0, 0, NbrCounter::max);
+			nbr_cnt       [v] = NbrCounter();
 			chain_next_v  [v] = v;
 			chain_id      [v] = v;    // TODO is it needed, is it usedt?
 			chain_lib_cnt [v] = NbrCounter::max; // TODO is it logical? (off_boards)
@@ -367,7 +349,7 @@ public:                         // board interface
 				color_at   [v]              = color::empty;
 				empty_pos  [v]              = empty_v_cnt;
 				empty_v    [empty_v_cnt++]  = v;
-
+/*
 				off_board_cnt = 0;// 有多少个邻点不在board上
 				vertex_for_each_nbr (v, nbr_v, {
 						if (!nbr_v.is_on_board ()) 
@@ -376,7 +358,11 @@ public:                         // board interface
 				// 登记邻点数
 				rep (ii, off_board_cnt) 
 					nbr_cnt [v].off_board_inc ();
-
+*/
+				vertex_for_each_nbr2 (v, nbr_v,i, {
+						if (!nbr_v.is_on_board ()) 
+						nbr_cnt [v].off_board_inc (i);
+						});
 			}
 		}
 
@@ -465,7 +451,7 @@ public: // legality functions
 				diag_color_cnt [color_at [diag_v]]++;
 				});
 
-		return diag_color_cnt [Color (player::other(player))] + (diag_color_cnt [color::off_board] > 0) < 2;
+		return diag_color_cnt [color::from_player(player::other(player))] + (diag_color_cnt [color::off_board] > 0) < 2;
 	}
 
 
@@ -581,8 +567,8 @@ public: // auxiliary functions
 
 	bool play_eye_is_suicide (Vertex<T> v) {
 		uint all_nbr_live = true;
-		vertex_for_each_nbr (v, nbr_v, all_nbr_live &= (--chain_lib_cnt [chain_id [nbr_v]] != 0));
-		vertex_for_each_nbr (v, nbr_v, chain_lib_cnt [chain_id [nbr_v]]++); //TODO: 能否更快
+		vertex_for_each_nbr (v, nbr_v,i, all_nbr_live &= (--chain_lib_cnt [chain_id [nbr_v]] != 0));
+		vertex_for_each_nbr (v, nbr_v,i, chain_lib_cnt [chain_id [nbr_v]]++); //TODO: 能否更快
 		return all_nbr_live;
 	}
 
@@ -597,15 +583,15 @@ public: // auxiliary functions
 
 		place_stone (player, v);
 
-		vertex_for_each_nbr (v, nbr_v, {
+		vertex_for_each_nbr (v, nbr_v,i, {
 
-			nbr_cnt [nbr_v].player_inc (player);
+			nbr_cnt [nbr_v].player_inc (player,i);
         
 			if (color::is_player(color_at [nbr_v])) {
 				// This should be before 'if' to have good lib_cnt for empty vertices
 				chain_lib_cnt [chain_id [nbr_v]] --; 
 
-				if (color_at [nbr_v] != Color (player)) { // same color of groups
+				if (color_at [nbr_v] != color::from_player(player)) { // same color of groups
 					if (chain_lib_cnt [chain_id [nbr_v]] == 0) 
 						remove_chain (nbr_v);
 				} else {
@@ -634,16 +620,16 @@ public: // auxiliary functions
 	// 在对方眼的位置下子（忽略因为劫而导致的禁入情况，因为调用前判断过了）
 	no_inline
 	void play_eye_legal (Player player, Vertex<T> v) {
-		vertex_for_each_nbr (v, nbr_v, chain_lib_cnt [chain_id [nbr_v]]--);
+		vertex_for_each_nbr (v, nbr_v,i, chain_lib_cnt [chain_id [nbr_v]]--);
 
 		basic_play (player, v);
 		place_stone (player, v);
     
-		vertex_for_each_nbr (v, nbr_v, { 
-			nbr_cnt [nbr_v].player_inc (player);
+		vertex_for_each_nbr (v, nbr_v,i, { 
+			nbr_cnt [nbr_v].player_inc (player,i);
 		});
 
-		vertex_for_each_nbr (v, nbr_v, {
+		vertex_for_each_nbr (v, nbr_v,i, {
 			if ((chain_lib_cnt [chain_id [nbr_v]] == 0)) 
 			remove_chain (nbr_v);
 		});
@@ -703,8 +689,8 @@ public: // auxiliary functions
 		assertc (board_ac, act_v == v);
 
 		do {
-			vertex_for_each_nbr (act_v, nbr_v, {
-				nbr_cnt [nbr_v].player_dec (color::to_player(old_color));
+			vertex_for_each_nbr (act_v, nbr_v,i, {
+				nbr_cnt [nbr_v].player_dec (color::to_player(old_color),i);
 				chain_lib_cnt [chain_id [nbr_v]]++;
 			});
 
@@ -719,7 +705,7 @@ public: // auxiliary functions
 	void place_stone (Player pl, Vertex<T> v) {
 		hash ^= zobrist->of_pl_v (pl, v);
 		player_v_cnt[pl]++;
-		color_at[v] = Color (pl);
+		color_at[v] = color::from_player(pl);
 
 		empty_v_cnt--;
 		empty_pos [empty_v [empty_v_cnt]] = empty_pos [v];
@@ -734,7 +720,7 @@ public: // auxiliary functions
 
 	void remove_stone (Vertex<T> v) {
 		hash ^= zobrist->of_pl_v (color::to_player(color_at[v]), v);
-		player_v_cnt [color_at[v]]--;
+		player_v_cnt [color::to_player(color_at[v])]--;
 		color_at [v] = color::empty;
 
 		empty_pos [v] = empty_v_cnt;
@@ -764,7 +750,7 @@ public:                         // utils
 	}
 
 
-	Player approx_winner () { return Player (approx_score () <= 0); }
+	Player approx_winner () { return Player ((approx_score() <= 0)+1); }
 
 
 	int score () const {
@@ -780,7 +766,7 @@ public:                         // utils
 
 
 	Player winner () const { 
-		return Player (score () <= 0); 
+		return Player ((score () <= 0) + 1); 
 	}
 
 

@@ -33,7 +33,7 @@ const float print_visit_threshold_parent  = 0.02;
 
 // consistency checking / debugging control
 
-
+//#define DEBUG
 #ifdef NDEBUG
 //#error "NDEBUG not allowed."
 #endif

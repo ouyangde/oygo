@@ -59,7 +59,7 @@ namespace simple_playout_benchmark {
 					score = mc_board -> score ();
 					playout_ok_score += score;
 
-					winner = Player (score <= 0);  // mc_board->winner ()
+					winner = Player ((score <= 0) + 1);  // mc_board->winner ()
 					win_cnt [winner] ++;
 
 					if (score_per_vertex) {
@@ -125,6 +125,7 @@ int main (int argc, char** argv) {
 	setvbuf (stdout, (char *)NULL, _IONBF, 0);
 	setvbuf (stderr, (char *)NULL, _IONBF, 0);
 
+	//NbrCounter::output_cnt_max_map();
 	Board<9> board;
 
 	ostringstream response;

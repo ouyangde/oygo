@@ -13,11 +13,12 @@
 namespace player {
 
 	//typedef uint t;
-	enum t{ black = 0, white = 1, wrong = 2};
-	const uint cnt = 2;
+	enum t{ black = 1, white = 2, wrong = 3};
+	const uint cnt = 3;
 
 	inline t other(t pl) {
-		return t(pl ^ 1);
+		//return t(pl ^ 1);
+		return t(pl ^ 3);
 	}
 	inline bool in_range(t pl) {
 		return pl < wrong;
@@ -41,24 +42,37 @@ typedef player::t Player;
 namespace color {
 	typedef uint t;
 	enum {
-		black = 0, 
-		white = 1, 
-		empty = 2, 
+		empty = 0, 
+		black = 1, 
+		white = 2, 
 		off_board = 3, 
-		wrong = 40
+		wrong = 4
+	};
+	const int is_player_map[] = {
+		0,1,1,0,0
+	};
+	const int not_player_map[] = {
+		1,0,0,1,1
 	};
 	const int cnt = 4;
 	inline void check(t cl) {
 		assertc (color_ac, (cl & (~3)) == 0); 
 	}
 	inline bool is_player(t cl) {
-		return cl <= white;
+		//return cl <= white;
+		//return cl > 0;
+		return is_player_map[cl]; 
 	}
 	inline bool is_not_player(t cl) {
-		return cl > white;
+		//return cl > white;
+		//return cl == 0;
+		return not_player_map[cl]; 
+	}
+	inline t from_player(Player pl) {
+		return (t)(pl);
 	}
 	inline Player to_player(t cl) {
-		return (Player)cl;
+		return (Player)(cl);
 	}
 	inline bool in_range(t cl) {
 		return cl < cnt;
@@ -68,7 +82,7 @@ namespace color {
 typedef color::t Color;
 // TODO test it for performance
 #define color_for_each(col) \
-	for (Color col = color::black; color::in_range(col); ++col)
+	for (Color col = 0; color::in_range(col); ++col)
 
 /*
  * 坐标类，坐标由两个int值表示，-1表示棋盘外的坐标
@@ -196,13 +210,26 @@ public:
 /*
  * 邻点
  */
-#define vertex_for_each_nbr(center_v, nbr_v, block) {       \
+#define vertex_for_each_nbr(center_v, nbr_v,i, block) {       \
 	center_v.check_is_on_board ();                      \
 	Vertex<T> nbr_v;                                    \
-	nbr_v = center_v.N (); block;                       \
-	nbr_v = center_v.W (); block;                       \
-	nbr_v = center_v.E (); block;                       \
-	nbr_v = center_v.S (); block;                       \
+	uint i;						\
+	nbr_v = center_v.N (); i=4;block;                       \
+	nbr_v = center_v.W (); i=6;block;                       \
+	nbr_v = center_v.S (); i=0;block;                       \
+	nbr_v = center_v.E (); i=2;block;                       \
+}
+/*
+ * 邻点(但是i为正序)
+ */
+#define vertex_for_each_nbr2(center_v, nbr_v,i, block) {       \
+	center_v.check_is_on_board ();                      \
+	Vertex<T> nbr_v;                                    \
+	uint i;						\
+	nbr_v = center_v.N (); i=0;block;                       \
+	nbr_v = center_v.W (); i=2;block;                       \
+	nbr_v = center_v.S (); i=4;block;                       \
+	nbr_v = center_v.E (); i=6;block;                       \
 }
 
 /*
@@ -235,19 +262,21 @@ public:
 template<uint T> class Move {
 public:
 
-	const static uint cnt = player::white << Vertex<T>::bits_used | Vertex<T>::cnt;
+	//const static uint cnt = player::white << Vertex<T>::bits_used | Vertex<T>::cnt;
+	const static uint cnt = player::black << Vertex<T>::bits_used | Vertex<T>::cnt;
 
 	const static uint no_move_idx = 1;
 
 	uint idx;
 
 	void check () {
-		Player (idx >> Vertex<T>::bits_used);
+		Player ((idx >> Vertex<T>::bits_used) + 1);
 		Vertex<T> (idx & ((1 << Vertex<T>::bits_used) - 1)).check ();
 	}
 
 	explicit Move (Player player, Vertex<T> v) { 
-		idx = (player << Vertex<T>::bits_used) | v;
+		//idx = (player << Vertex<T>::bits_used) | v;
+		idx = ((player>>1) << Vertex<T>::bits_used) | v;
 	}
 
 	explicit Move () {
@@ -259,7 +288,7 @@ public:
 	}
 
 	Player get_player () { 
-		return Player (idx >> Vertex<T>::bits_used);
+		return Player ((idx >> Vertex<T>::bits_used) + 1);
 	}
 
 	Vertex<T> get_vertex () { 

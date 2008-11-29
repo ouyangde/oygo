@@ -26,7 +26,7 @@ template<uint T> string col_to_string (coord::t col) {
 //----------------------------
 //Player
 inline string to_string(Player pl) {
-	if(pl == player::black) {
+	if(pl == (Player)player::black) {
 		return "#";
 	} else {
 		return "O";
@@ -43,10 +43,6 @@ istream& operator>> (istream& in, Player& pl) {
 	}
 	in.setstate (ios_base::badbit);
 	return in;
-}
-ostream& operator<< (ostream& out, Player& pl) { 
-	out << to_string(pl); 
-	return out; 
 }
 //------------------------
 //Color
@@ -70,23 +66,9 @@ char to_char(Color cl) {
 	return '?';
 }
 //----------------------------
-//Move
-template<uint T> 
-istream& operator>> (istream& in, Move<T>& m) {
-	Player pl;
-	Vertex<T> v;
-	if (!(in >> pl >> v)) return in;
-	m = Move<T> (pl, v);
-	return in;
-}
-template<uint T>
-string to_string (Move<T>& m) {
-	return to_string(m.get_player()) + " " + to_string(m.get_vertex ());
-}
-//----------------------------
 //Vertex
 template<uint T> 
-string to_string (Vertex<T>& v) {
+string to_string (const Vertex<T>& v) {
 	coord::t r;
 	coord::t c;
 
@@ -134,6 +116,20 @@ Vertex<T> of_sgf_string (string s) {
 	} else {
 		return Vertex<T>::any ();
 	}
+}
+//----------------------------
+//Move
+template<uint T> 
+istream& operator>> (istream& in, Move<T>& m) {
+	Player pl;
+	Vertex<T> v;
+	if (!(in >> to_string(pl) >> v)) return in;
+	m = Move<T> (pl, v);
+	return in;
+}
+template<uint T>
+string to_string (Move<T>& m) {
+	return to_string(m.get_player()) + " " + to_string<T>(m.get_vertex ());
 }
 // TODO of_gtp_string
 template<uint T> 
