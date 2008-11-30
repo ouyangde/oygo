@@ -125,7 +125,8 @@ int main (int argc, char** argv) {
 	setvbuf (stdout, (char *)NULL, _IONBF, 0);
 	setvbuf (stderr, (char *)NULL, _IONBF, 0);
 
-	//NbrCounter::output_cnt_max_map();
+	//NbrCounter::output_eye_map();
+	//return 0;
 	Board<9> board;
 
 	ostringstream response;

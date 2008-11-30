@@ -235,13 +235,23 @@ public:
 /*
  * ╤т╫газ╣Ц
  */
-#define vertex_for_each_diag_nbr(center_v, nbr_v, block) {      \
+#define vertex_for_each_diag_nbr(center_v, nbr_v, i, block) {      \
 	center_v.check_is_on_board ();                          \
 	Vertex<T> nbr_v;                                        \
-	nbr_v = center_v.NW (); block;                          \
-	nbr_v = center_v.NE (); block;                          \
-	nbr_v = center_v.SW (); block;                          \
-	nbr_v = center_v.SE (); block;                          \
+	uint i;						\
+	nbr_v = center_v.NW (); i=4;block;                          \
+	nbr_v = center_v.NE (); i=6;block;                          \
+	nbr_v = center_v.SE (); i=0;block;                          \
+	nbr_v = center_v.SW (); i=2;block;                          \
+}
+#define vertex_for_each_diag_nbr2(center_v, nbr_v, i, block) {      \
+	center_v.check_is_on_board ();                          \
+	Vertex<T> nbr_v;                                        \
+	uint i;						\
+	nbr_v = center_v.NW (); i=0;block;                          \
+	nbr_v = center_v.NE (); i=2;block;                          \
+	nbr_v = center_v.SE (); i=4;block;                          \
+	nbr_v = center_v.SW (); i=6;block;                          \
 }
 
 #define player_vertex_for_each_9_nbr(center_v, pl, nbr_v, i) {      \

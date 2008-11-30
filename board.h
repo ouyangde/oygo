@@ -77,12 +77,15 @@ public:
 		bitfield |= (color::off_board << i); 
 	}
 	static const uint cnt_map[player::cnt][cnt];
+	static const uint eye_map[player::cnt][cnt];
 
 	uint empty_cnt  () const { return cnt_map[0][bitfield]; }
 	uint player_cnt (Player pl) const { return cnt_map[pl][bitfield]; }
 	uint player_cnt_is_max (Player pl) const { 
 		return cnt_map[pl][bitfield] == max;
 	}
+	// diag_nbr less than 2 or 1
+	uint is_nbr_lt2(Player pl) const { return eye_map[pl][bitfield]; }
 
 	void check () {
 		if (!nbr_cnt_ac) return;
@@ -111,6 +114,29 @@ public:
 			printf("\n},\n");
 		}
 	}
+	static void output_eye_map() {
+		player_for_each(i) {
+			printf("{");
+			for(int j = 0; j < 256; j++) {
+				if((j % 16) == 0) {
+					printf("\n");
+				}
+				int count = 0;
+				int off = 0;
+				for(int n = 0; n < 8; n+= 2) {
+					int b = ((j >> n) & 3);
+					if(b == 0) {
+					} else if(b == 3) {
+						off = 1;
+					} else if(b != i) {
+						count++;
+					}
+				}
+				printf("%d,",(count+off<2));
+			}
+			printf("\n},\n");
+		}
+	}
 };
 // class Board
 
@@ -130,6 +156,7 @@ public:
 
 	FastMap<Vertex<T>, Color>       color_at; // 每个点的颜色，这是棋盘的基本结构
 	FastMap<Vertex<T>, NbrCounter>  nbr_cnt; // incremental, for fast eye checking 每个点的邻点数
+	FastMap<Vertex<T>, NbrCounter>  diag_nbr_cnt; // 每个点的肩
 	FastMap<Vertex<T>, uint>        empty_pos; // 如果一个点是empty，记录其在empty_v中的索引值
 	FastMap<Vertex<T>, Vertex<T> >      chain_next_v;
 
@@ -149,7 +176,8 @@ public:
 
 	Vertex<T>                       ko_v;             // vertex forbidden by ko(劫)
 
-	Player                       last_player;      // player who made the last play (other::player is forbidden to retake)
+	//Player                       last_player;      // player who made the last play (other::player is forbidden to retake)
+	Player                       a_player;      // player who made the last play (other::player is forbidden to retake)
 	uint                         move_no;
 
 	play_ret_t                   last_move_status;
@@ -333,7 +361,8 @@ public:                         // board interface
 			player_last_v [pl] = Vertex<T>::any ();
 		}
 		move_no      = 0;
-		last_player  = player::white; // act player is other
+		//last_player  = player::white; // act player is other
+		a_player = player::black;
 		last_move_status = play_ok;
 		ko_v         = Vertex<T>::any ();
 		vertex_for_each_all (v) {
@@ -359,10 +388,15 @@ public:                         // board interface
 				rep (ii, off_board_cnt) 
 					nbr_cnt [v].off_board_inc ();
 */
-				vertex_for_each_nbr2 (v, nbr_v,i, {
-						if (!nbr_v.is_on_board ()) 
-						nbr_cnt [v].off_board_inc (i);
-						});
+				vertex_for_each_nbr2(v, nbr_v, i, {
+					if (!nbr_v.is_on_board ()) 
+					nbr_cnt [v].off_board_inc (i);
+				});
+				// 更新肩
+				vertex_for_each_diag_nbr2(v, nbr_v, i, {
+					if (!nbr_v.is_on_board ()) 
+					diag_nbr_cnt[v].off_board_inc(i);
+				});
 			}
 		}
 
@@ -420,7 +454,8 @@ public: // legality functions
 		return 
 			v == Vertex<T>::pass () || 
 			!nbr_cnt[v].player_cnt_is_max (player::other(player)) || 
-			(!play_eye_is_ko (player, v) && 
+			//(!play_eye_is_ko (player, v) && 
+			(v != ko_v && 
 			 !play_eye_is_suicide (v));
 	}
 
@@ -441,17 +476,19 @@ public: // legality functions
 		// TODO:是否会错过故意填眼的妙招??
 		assertc (board_ac, color_at [v] == color::empty);
 		if (! nbr_cnt[v].player_cnt_is_max (player)) return false;
-
+		return diag_nbr_cnt[v].is_nbr_lt2(player);
+		/*
 		int diag_color_cnt[color::cnt]; // TODO
 		color_for_each (col) 
 			diag_color_cnt [col] = 0; // memset is slower
 
 		// 肩
-		vertex_for_each_diag_nbr (v, diag_v, {
-				diag_color_cnt [color_at [diag_v]]++;
-				});
+		vertex_for_each_diag_nbr (v, diag_v, i, {
+			diag_color_cnt [color_at [diag_v]]++;
+		});
 
 		return diag_color_cnt [color::from_player(player::other(player))] + (diag_color_cnt [color::off_board] > 0) < 2;
+		*/
 	}
 
 
@@ -561,7 +598,8 @@ public: // auxiliary functions
 
 
 	bool play_eye_is_ko (Player player, Vertex<T> v) {
-		return (v == ko_v) & (player == player::other(last_player));
+		//return (v == ko_v) & (player == player::other(last_player));
+		return v == ko_v;
 	}
 
 
@@ -605,6 +643,8 @@ public: // auxiliary functions
 				}
 			}
 		});
+		// 更新肩的信息
+		vertex_for_each_diag_nbr(v, nbr_v,i,diag_nbr_cnt[nbr_v].player_inc(player,i););
     
 		if (chain_lib_cnt [chain_id [v]] == 0) {
 			assertc (board_ac, last_empty_v_cnt - empty_v_cnt == 1);
@@ -628,6 +668,11 @@ public: // auxiliary functions
 		vertex_for_each_nbr (v, nbr_v,i, { 
 			nbr_cnt [nbr_v].player_inc (player,i);
 		});
+		// 更新肩
+		vertex_for_each_diag_nbr(v, nbr_v,i,{
+			diag_nbr_cnt[nbr_v].player_inc(player,i);
+		});
+		
 
 		vertex_for_each_nbr (v, nbr_v,i, {
 			if ((chain_lib_cnt [chain_id [nbr_v]] == 0)) 
@@ -644,15 +689,6 @@ public: // auxiliary functions
 	}
 
 
-	void basic_play (Player player, Vertex<T> v) { // Warning: has to be called before place_stone, because of hash storing
-		assertc (board_ac, move_no <= max_game_length);
-		ko_v                    = Vertex<T>::any ();
-		last_empty_v_cnt        = empty_v_cnt;
-		last_player             = player;
-		player_last_v [player]  = v;
-		move_history [move_no]  = Move<T> (player, v);
-		move_no                += 1;
-	}
 
 
 	void merge_chains (Vertex<T> v_base, Vertex<T> v_new) {
@@ -666,7 +702,7 @@ public: // auxiliary functions
 			act_v = chain_next_v [act_v];
 		} while (act_v != v_new);
 
-		swap (chain_next_v[v_base], chain_next_v[v_new]);// TODO:没看懂
+		swap (chain_next_v[v_base], chain_next_v[v_new]);// 两个环断开，分别接到对方环上，扭成一个大环
 	}
 
 
@@ -693,6 +729,10 @@ public: // auxiliary functions
 				nbr_cnt [nbr_v].player_dec (color::to_player(old_color),i);
 				chain_lib_cnt [chain_id [nbr_v]]++;
 			});
+			// 更新肩
+			vertex_for_each_diag_nbr(act_v, nbr_v,i,{
+				diag_nbr_cnt[nbr_v].player_dec(color::to_player(old_color),i);
+			});
 
 			tmp_v = act_v;
 			act_v = chain_next_v[act_v];
@@ -701,6 +741,17 @@ public: // auxiliary functions
 		} while (act_v != v);
 	}
 
+
+	void basic_play (Player player, Vertex<T> v) { // Warning: has to be called before place_stone, because of hash storing
+		assertc (board_ac, move_no <= max_game_length);
+		ko_v                    = Vertex<T>::any ();
+		last_empty_v_cnt        = empty_v_cnt;
+		//last_player             = player;
+		a_player             = player::other(player);
+		player_last_v [player]  = v;
+		move_history [move_no]  = Move<T> (player, v);
+		move_no                += 1;
+	}
 
 	void place_stone (Player pl, Vertex<T> v) {
 		hash ^= zobrist->of_pl_v (pl, v);
@@ -735,7 +786,8 @@ public:                         // utils
 
 
 	// TODO/FIXME last_player should be preserverd in undo function
-	Player act_player () const { return player::other(last_player); } 
+	//Player act_player () const { return player::other(last_player); } 
+	Player act_player () const { return a_player; } 
 
 
 	bool both_player_pass () {
