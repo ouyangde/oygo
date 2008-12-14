@@ -167,8 +167,8 @@ ostream& operator<< (ostream& out, Vertex<T>& v) {
 
 //----------------------------
 //Board
-template<uint T>
-string to_string (const Board<T>& idx, Vertex<T> mark_v = Vertex<T>::any ()) {
+template<uint T, typename RULE>
+string to_string (const GoBoard<T>& idx, Vertex<T> mark_v = Vertex<T>::any ()) {
 	ostringstream out;
 
 #define os(n)      out << " " << n

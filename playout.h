@@ -8,9 +8,9 @@ class Playout {
 public:
 	static const uint max_playout_length = T * T * 2;
 	Policy*  policy;
-	Board<T>*   board;
+	GoBoard<T>*   board;
 
-	Playout (Policy* policy_, Board<T>*  board_) : policy (policy_), board (board_) {}
+	Playout (Policy* policy_, GoBoard<T>*  board_) : policy (policy_), board (board_) {}
 
 	all_inline
 	void play_move () {
@@ -22,7 +22,7 @@ public:
 			Vertex<T>   v          = policy->next_vertex ();
 
 			// 简单的判断是否合法，但是有误判
-			if (board->is_pseudo_legal (act_player, v) == false) {
+			if (board->is_legal (act_player, v) == false) {
 				policy->bad_vertex (v);
 				continue;
 			} else {
@@ -69,14 +69,14 @@ protected:
 	uint to_check_cnt;
 	uint act_evi;
 
-	Board<T>* board;
+	GoBoard<T>* board;
 	Player act_player;
 
 public:
 
 	SimplePolicy () : board (NULL),pm(time(NULL)) { }
 
-	void begin_playout (Board<T>* board_) { 
+	void begin_playout (GoBoard<T>* board_) { 
 		board = board_;
 	}
 

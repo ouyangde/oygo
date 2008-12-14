@@ -1,10 +1,11 @@
+#ifndef _GO_CONF_
+#define _GO_CONF_
 
 typedef unsigned int uint;
 typedef unsigned long long uint64;
 typedef unsigned int uint32;
 typedef unsigned short uint16;
 typedef unsigned char uint8;
-
 // constants
 
 // board parameters
@@ -71,3 +72,4 @@ const bool uct_ac             = false;
 const bool tree_ac            = false;
 const bool pool_ac            = false;
 const bool gtp_ac             = true;
+#endif // _GO_CONF_

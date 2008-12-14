@@ -6,6 +6,8 @@
 //#include <sstream>
 //#include <iomanip>
 using namespace std;
+
+
 // standard macros
 
 #define qq(...) fprintf(stdout, __VA_ARGS__); fflush (stdout);

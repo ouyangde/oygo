@@ -1,6 +1,8 @@
 #include "go_conf.h"
 #include "utils.h"
-#include "board.h"
+#include "goboard.h"
+#include "nbrcounter.h"
+#include "zobrist.h"
 PmRandom zobrist_pm;
 extern  const char col_tab[];
 const char col_tab[] = "ABCDEFGHJKLMNOPQRSTUVWXYZ";
