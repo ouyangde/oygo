@@ -20,7 +20,7 @@ public:
 		while (true) {
 			//Player   act_player = board->act_player ();
 			Vertex<T>   v          = policy->next_vertex ();
-
+#if 0
 			// 简单的判断是否合法，但是有误判
 			if (board->is_legal (act_player, v) == false) {
 				policy->bad_vertex (v);
@@ -29,6 +29,15 @@ public:
 				board->play_legal (act_player, v);
 				policy->played_vertex (v);
 				act_player = board->act_player ();
+				break;
+			}
+#endif
+			if (board->play(act_player, v) == false) {
+				policy->bad_vertex(v);
+				continue;
+			} else {
+				policy->played_vertex(v);
+				act_player = board->act_player();
 				break;
 			}
 		}
@@ -64,7 +73,7 @@ public:
 template<uint T> class SimplePolicy {
 protected:
 
-	PmRandom pm; // TODO make it non-static
+	PmRandom pm; 
 
 	uint to_check_cnt;
 	uint act_evi;

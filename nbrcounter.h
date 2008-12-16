@@ -111,13 +111,13 @@ public:
 	void place_stone(Player pl, Vertex<T> v) {
 		vertex_for_each_nbr(v, nbr_v,i, nbr_cnt[nbr_v].player_inc(pl,i));
 		// 更新肩的信息
-		vertex_for_each_diag_nbr(v, nbr_v,i,diag_nbr_cnt[nbr_v].player_inc(pl,i));
+		//vertex_for_each_diag_nbr(v, nbr_v,i,diag_nbr_cnt[nbr_v].player_inc(pl,i));
 	}
-	void remove_stone(Vertex<T> v) {
+	void remove_stone(Player pl, Vertex<T> v) {
 		Derive* p = static_cast<Derive*>(this);
-		vertex_for_each_nbr(v, nbr_v,i,nbr_cnt[nbr_v].player_dec(color::to_player(p->color_at[v]),i));
+		vertex_for_each_nbr(v, nbr_v,i,nbr_cnt[nbr_v].player_dec(pl,i));
 		// 更新肩
-		vertex_for_each_diag_nbr(v, nbr_v,i,diag_nbr_cnt[nbr_v].player_dec(color::to_player(p->color_at[v]),i));
+		//vertex_for_each_diag_nbr(v, nbr_v,i,diag_nbr_cnt[nbr_v].player_dec(pl,i));
 	}
 	void check() const {
 		check_nbr_cnt();

@@ -88,8 +88,8 @@ protected: // auxiliary functions
 		empty_pos[empty_v[empty_v_cnt]] = empty_pos[v];
 		empty_v[empty_pos[v]] = empty_v[empty_v_cnt];
 	}
-	void remove_stone(Vertex<T> v) {
-		player_v_cnt[color::to_player(color_at[v])]--;
+	void remove_stone(Player pl, Vertex<T> v) {
+		player_v_cnt[pl]--;
 		color_at[v] = color::empty;
 
 		empty_pos[v] = empty_v_cnt;

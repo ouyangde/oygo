@@ -62,6 +62,8 @@ namespace simple_playout_benchmark {
 
 		perf_timer.start();
 		float seconds_begin = get_seconds();
+		uint move_no = 0;
+		uint pl_cnt = 0;
 
 		rep(ii, playout_cnt) {
 			mc_board->load(start_board);
@@ -75,6 +77,8 @@ namespace simple_playout_benchmark {
 
 					winner = Player((score <= 0) + 1);  // mc_board->winner()
 					win_cnt [winner] ++;
+					move_no += mc_board->move_no;
+					pl_cnt += 1;
 
 					if(score_per_vertex) {
 						vertex_for_each_faster(v)
@@ -96,6 +100,7 @@ namespace simple_playout_benchmark {
 
 		out << "Initial board:" << endl;
 		out << "komi " << start_board->get_komi() << " for white" << endl;
+		out << "av step " << (move_no/pl_cnt) << endl;
 
 		//out << start_board->to_string();
 		//out << to_string(*start_board);

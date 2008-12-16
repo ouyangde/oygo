@@ -60,9 +60,9 @@ public:
 	void place_stone(Player pl, Vertex<T> v) {
 		hash ^= zobrist->of_pl_v(pl, v);
 	}
-	void remove_stone(Vertex<T> v) {
+	void remove_stone(Player pl, Vertex<T> v) {
 		Derive* p = static_cast<Derive*>(this);
-		hash ^= zobrist->of_pl_v(color::to_player(p->color_at[v]), v);
+		hash ^= zobrist->of_pl_v(pl, v);
 	}
 };
 extern PmRandom zobrist_pm;

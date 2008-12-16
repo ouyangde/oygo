@@ -161,13 +161,13 @@ Vertex<T> of_gtp_string (string s) {
 }
 template<uint T> 
 ostream& operator<< (ostream& out, Vertex<T>& v) { 
-	out << v.to_string (); 
+	out << to_string (v); 
 	return out; 
 }
 
 //----------------------------
 //Board
-template<uint T, typename RULE>
+template<uint T>
 string to_string (const GoBoard<T>& idx, Vertex<T> mark_v = Vertex<T>::any ()) {
 	ostringstream out;
 

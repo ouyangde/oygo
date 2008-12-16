@@ -16,14 +16,13 @@ public ZobristBoard<T, GoBoard<T> >
 public:
 	using BasicBoard<T, GoBoard>::empty_v_cnt;
 	using BasicBoard<T, GoBoard>::color_at;
-	//using BasicBoard<T, GoBoard>::init;
 	using BasicBoard<T, GoBoard>::empty_v;
 	using BasicBoard<T, GoBoard>::player_v_cnt;
 	using BasicBoard<T, GoBoard>::move_history;
 	using BasicBoard<T, GoBoard>::move_no;
 	using BasicBoard<T, GoBoard>::max_game_length;
 	using NbrCounterBoard<T, GoBoard>::nbr_cnt;
-	using NbrCounterBoard<T, GoBoard>::diag_nbr_cnt;
+	//using NbrCounterBoard<T, GoBoard>::diag_nbr_cnt;
 	using ZobristBoard<T, GoBoard>::hash;
 public:
 	FastMap<Vertex<T>, Vertex<T> >  chain_next_v;
@@ -42,7 +41,8 @@ public:                         // board interface
 		vertex_for_each_all(v) {
 			chain_next_v[v] = v;
 			chain_id[v] = v;    // TODO is it needed, is it usedt?
-			chain_lib_cnt[v] = NbrCounter::max; // TODO is it logical? (off_boards)
+			//chain_lib_cnt[v] = NbrCounter::max; // TODO is it logical? (off_boards)
+			chain_lib_cnt[v] = nbr_cnt[v].empty_cnt();
 		}
 	}
 	void set_komi(float fkomi) { 
@@ -51,6 +51,7 @@ public:                         // board interface
 	float get_komi() const { 
 		return float(-komi) + 0.5;
 	}
+	// deprecated
 	// checks for move legality
 	// it has to point to empty vertexand empty
 	// can't recognize play_suicide
@@ -68,16 +69,6 @@ public:                         // board interface
 			(eye_is_not_ko(v) && //(v != ko_v && 
 			 !eye_is_suicide(v));
 	}
-	bool eye_is_not_ko(Vertex<T> v) {
-		//return(v == ko_v) & (player == player::other(last_player));
-		return v != ko_v;
-	}
-	bool eye_is_suicide(Vertex<T> v) {
-		uint all_nbr_live = true;
-		vertex_for_each_nbr(v, nbr_v,i, all_nbr_live &= (--chain_lib_cnt[chain_id[nbr_v]] != 0));
-		vertex_for_each_nbr(v, nbr_v,i, chain_lib_cnt[chain_id[nbr_v]]++); //TODO: 能否更快
-		return all_nbr_live;
-	}
 public: // legality functions
 	// MC模拟时仅考虑不填自己的眼,对于填自己空或者缩小眼位之类的则不管
 	bool is_eyelike(Player player, Vertex<T> v) { // 是否像一个眼
@@ -87,7 +78,19 @@ public: // legality functions
 		// TODO:是否会错过故意填眼的妙招??
 		assertc(board_ac, color_at[v] == color::empty);
 		if(! nbr_cnt[v].player_cnt_is_max(player)) return false;
+#if 1
+		int diag_color_cnt[4]; // TODO
+		color_for_each (col) 
+			diag_color_cnt [col] = 0; // memset is slower
+
+		vertex_for_each_diag_nbr (v, diag_v, i, {
+				diag_color_cnt [color_at [diag_v]]++;
+				});
+
+		return diag_color_cnt [Color (player::other(player))] + (diag_color_cnt [color::off_board] > 0) < 2;
+#else
 		return diag_nbr_cnt[v].is_nbr_lt2(player);
+#endif
 	}
 	void check_no_more_legal(Player player) { // at the end of the playout
 		unused(player);
@@ -96,30 +99,61 @@ public: // legality functions
 			if(color_at[v] == color::empty)
 				assert(is_eyelike(player, v) || is_legal(player, v) == false);
 	}
-	// accept pass
-	// will ignore simple-ko ban
-	// will play single stone suicide
 	all_inline 
-	void play_legal(Player player, Vertex<T> v) {
+	bool play(Player player, Vertex<T> v) {
 		check();
-
 		if(v == Vertex<T>::pass()) {
 			basic_play(player, Vertex<T>::pass());
-			return;
+			return true;
 		}
-
 		v.check_is_on_board();
 		assertc(board_ac, color_at[v] == color::empty);
 
 		if(nbr_cnt[v].player_cnt_is_max(player::other(player))) {
-			play_eye_legal(player, v);
+			return play_eye(player, v);
+#if 1 
+		} else if(nbr_cnt[v].empty_cnt() == 0) { // 处理可能的自杀
+			// complete suicide testing
+			vertex_for_each_nbr(v, nbr_v,i, chain_lib_cnt[chain_id[nbr_v]]--); 
+			uint valid = false;
+			vertex_for_each_nbr(v, nbr_v,i, {
+				valid |= !((color_at[nbr_v] != color::from_player(player)) ^ (chain_lib_cnt[chain_id[nbr_v]] == 0));
+			});
+			if(!valid) {
+				vertex_for_each_nbr(v, nbr_v,i, chain_lib_cnt[chain_id[nbr_v]]++); 
+				return false;
+			}
 		} else {
-			play_not_eye(player, v);
+			vertex_for_each_nbr(v, nbr_v,i, chain_lib_cnt[chain_id[nbr_v]]--); 
+		}
+		basic_play(player, v);
+		place_stone(player, v);
+		vertex_for_each_nbr(v, nbr_v,i, {
+			if(color::is_player(color_at[nbr_v])) {
+				if(color_at[nbr_v] != color::from_player(player)) { // same color of groups
+					if(chain_lib_cnt[chain_id[nbr_v]] == 0) 
+						remove_chain(nbr_v);
+				} else {
+					if(chain_id[nbr_v] != chain_id[v]) {
+						if(chain_lib_cnt[chain_id[v]] > chain_lib_cnt[chain_id[nbr_v]]) {
+							merge_chains(v, nbr_v);
+						} else {
+							merge_chains(nbr_v, v);
+						}         
+					}
+				}
+			}
+		});
+#else
+		} else {
+			play_not_eye(player, v); //TODO: 
 			// TODO invent complete suicide testing
 			assertc(board_ac, last_move_status == play_ok || last_move_status == play_suicide); 
 		}
-
+#endif
+		return true;
 	}
+public: // slow functions
 	// very slow function
 	bool undo() {
 		Move<T> replay[max_game_length];
@@ -195,7 +229,72 @@ public: // legality functions
 		return false;
 	}
 private:
+	bool eye_is_not_ko(Vertex<T> v) {
+		//return(v == ko_v) & (player == player::other(last_player));
+		return v != ko_v;
+	}
+	bool eye_is_ko(Vertex<T> v) {
+		//return(v == ko_v) & (player == player::other(last_player));
+		return v == ko_v;
+	}
+	// deprecated
+	bool eye_is_suicide(Vertex<T> v) {
+		uint all_nbr_live = true;
+		vertex_for_each_nbr(v, nbr_v,i, all_nbr_live &= (--chain_lib_cnt[chain_id[nbr_v]] != 0));
+		vertex_for_each_nbr(v, nbr_v,i, chain_lib_cnt[chain_id[nbr_v]]++); //TODO: 能否更快
+		return all_nbr_live;
+	}
+	//no_inline
+	bool play_eye(Player player, Vertex<T> v) {
+		if(eye_is_ko(v)) return false;
+		uint all_nbr_live = true;
+		vertex_for_each_nbr(v, nbr_v,i, all_nbr_live &= (--chain_lib_cnt[chain_id[nbr_v]] != 0));
+		if(all_nbr_live) {
+			vertex_for_each_nbr(v, nbr_v,i, chain_lib_cnt[chain_id[nbr_v]]++); 
+			return false;
+		}
+		basic_play(player, v);
+		last_empty_v_cnt = empty_v_cnt;
+		place_stone(player, v);
+		vertex_for_each_nbr(v, nbr_v,i, {
+				if((chain_lib_cnt[chain_id[nbr_v]] == 0)) 
+				remove_chain(nbr_v);
+				});
+		assertc(board_ac, chain_lib_cnt[chain_id[v]] != 0);
 
+		if(last_empty_v_cnt == empty_v_cnt) { // if captured exactly one stone, end this was eye
+			ko_v = empty_v[empty_v_cnt - 1]; // then ko formed
+		} else {
+			ko_v = Vertex<T>::any();
+		}
+		return true;
+	}
+
+	// accept pass
+	// will ignore simple-ko ban
+	// will play single stone suicide
+	all_inline 
+	void play_legal(Player player, Vertex<T> v) {
+		check();
+
+		if(v == Vertex<T>::pass()) {
+			basic_play(player, Vertex<T>::pass());
+			return;
+		}
+
+		v.check_is_on_board();
+		assertc(board_ac, color_at[v] == color::empty);
+
+		if(nbr_cnt[v].player_cnt_is_max(player::other(player))) {
+			play_eye_legal(player, v);
+		} else {
+			play_not_eye(player, v);
+			// TODO invent complete suicide testing
+			assertc(board_ac, last_move_status == play_ok || last_move_status == play_suicide); 
+		}
+
+	}
+	// deprecated
 	all_inline
 	void play_not_eye(Player player, Vertex<T> v) {
 		check();
@@ -203,13 +302,14 @@ private:
 		assertc(board_ac, color_at[v] == color::empty);
 
 		basic_play(player, v);
+		last_empty_v_cnt = empty_v_cnt; // TODO: remove this
 		place_stone(player, v);
 
 		vertex_for_each_nbr(v, nbr_v,i, {
-			if(color::is_player(color_at[nbr_v])) {
-				// This should be before 'if' to have good lib_cnt for empty vertices
-				chain_lib_cnt[chain_id[nbr_v]]--; 
+			// This should be before 'if' to have good lib_cnt for empty vertices
+			chain_lib_cnt[chain_id[nbr_v]]--; 
 
+			if(color::is_player(color_at[nbr_v])) {
 				if(color_at[nbr_v] != color::from_player(player)) { // same color of groups
 					if(chain_lib_cnt[chain_id[nbr_v]] == 0) 
 						remove_chain(nbr_v);
@@ -236,12 +336,14 @@ private:
 	}
 
 
+	// deprecated
 	// 在对方眼的位置下子（忽略因为劫而导致的禁入情况，因为调用前判断过了）
 	no_inline
 	void play_eye_legal(Player player, Vertex<T> v) {
 		vertex_for_each_nbr(v, nbr_v,i, chain_lib_cnt[chain_id[nbr_v]]--);
 
 		basic_play(player, v);
+		last_empty_v_cnt = empty_v_cnt;
 		place_stone(player, v);
     
 		vertex_for_each_nbr(v, nbr_v,i, {
@@ -285,7 +387,9 @@ private:
 		assertc(board_ac, color::is_player(old_color));
 
 		do {
-			remove_stone(act_v);
+			remove_stone(color::to_player(old_color), act_v);
+			chain_id[act_v] = act_v;
+			chain_lib_cnt[act_v] = 0;// TODO: is it fixed?
 			act_v = chain_next_v[act_v];
 		} while(act_v != v);
 
@@ -302,7 +406,6 @@ private:
 	void basic_play(Player player, Vertex<T> v) { // Warning: has to be called before place_stone, because of hash storing
 		BasicBoard<T, GoBoard>::play(player, v);
 		ko_v                    = Vertex<T>::any();
-		last_empty_v_cnt        = empty_v_cnt;
 	}
 	void place_stone(Player player, Vertex<T> v) {
 		BasicBoard<T, GoBoard>::place_stone(player, v);
@@ -310,15 +413,18 @@ private:
 		ZobristBoard<T, GoBoard>::place_stone(player, v);
 
 		assertc(chain_next_v_ac, chain_next_v[v] == v);
-		chain_id[v] = v;
-		chain_lib_cnt[v] = nbr_cnt[v].empty_cnt();
+		assertc(chain_next_v_ac, chain_id[v] == v);
+		assertc(chain_next_v_ac, chain_lib_cnt[v] == nbr_cnt[v].empty_cnt());
+		//chain_id[v] = v;
+		//chain_lib_cnt[v] = nbr_cnt[v].empty_cnt();
 	}
-	void remove_stone(Vertex<T> v) {
-		BasicBoard<T, GoBoard>::remove_stone(v);
-		NbrCounterBoard<T, GoBoard>::remove_stone(v);
-		ZobristBoard<T, GoBoard>::remove_stone(v);
-
-		chain_id[v] = v;
+	void remove_stone(Player pl, Vertex<T> v) {
+		// 按照place_stone相反的顺序
+		ZobristBoard<T, GoBoard>::remove_stone(pl, v);
+		NbrCounterBoard<T, GoBoard>::remove_stone(pl, v);
+		BasicBoard<T, GoBoard>::remove_stone(pl, v);
+		
+		//chain_id[v] = v;
 	}
 
 public:
@@ -326,9 +432,11 @@ public:
 		return komi + player_v_cnt[player::black] -  player_v_cnt[player::white];
 	}
 
-
 	Player approx_winner() { return Player((approx_score() <= 0)+1); }
 
+	Player winner() const { 
+		return Player((score() <= 0) + 1); 
+	}
 
 	int score() const {
 		int eye_score = 0;
@@ -340,12 +448,6 @@ public:
 
 		return approx_score() + eye_score;
 	}
-
-
-	Player winner() const { 
-		return Player((score() <= 0) + 1); 
-	}
-
 
 	int vertex_score(Vertex<T> v) {
 		switch(color_at[v]) {
@@ -365,9 +467,9 @@ public:                         // consistency checks
 		BasicBoard<T, GoBoard>::check();
 		NbrCounterBoard<T, GoBoard>::check();
 		ZobristBoard<T, GoBoard>::check();
-
 		check_chain_at();
 		check_chain_next_v();
+
 	}
 private:
 	void check_chain_at() const {
@@ -389,8 +491,12 @@ private:
 		if(!chain_next_v_ac) return;
 		vertex_for_each_all(v) {
 			chain_next_v[v].check();
-			if(!color::is_player(color_at[v])) 
+			if(!color::is_player(color_at[v])) {
 				assert(chain_next_v[v] == v);
+			}
+			if(color_at[v] == color::empty) {
+				assert(chain_lib_cnt[v] == nbr_cnt[v].empty_cnt());
+			}
 		}
 	}
 };
