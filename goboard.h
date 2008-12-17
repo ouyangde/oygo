@@ -14,6 +14,7 @@ public NbrCounterBoard<T, GoBoard<T> >,
 public ZobristBoard<T, GoBoard<T> >
 {
 public:
+	static const bool use_mercy_rule = true;
 	using BasicBoard<T, GoBoard>::empty_v_cnt;
 	using BasicBoard<T, GoBoard>::color_at;
 	using BasicBoard<T, GoBoard>::empty_v;

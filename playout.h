@@ -3,14 +3,14 @@ enum playout_status_t { pass_pass, mercy, too_long };
 
 
 // ----------------------------------------------------------------------
-template <typename Policy,uint T> 
+template <typename Policy,uint T, class Board> 
 class Playout {
 public:
 	static const uint max_playout_length = T * T * 2;
 	Policy*  policy;
-	GoBoard<T>*   board;
+	Board*   board;
 
-	Playout (Policy* policy_, GoBoard<T>*  board_) : policy (policy_), board (board_) {}
+	Playout (Policy* policy_, Board*  board_) : policy (policy_), board (board_) {}
 
 	all_inline
 	void play_move () {
@@ -60,7 +60,7 @@ public:
 				return too_long;
 			}
 
-			if (use_mercy_rule && uint (abs (board->approx_score ())) > mercy_threshold) {
+			if (Board::use_mercy_rule && uint (abs (board->approx_score ())) > mercy_threshold) {
 				policy->end_playout (mercy);
 				return mercy;
 			}
@@ -118,4 +118,51 @@ public:
 
 };
 
+template<uint T> class RenjuPolicy {
+protected:
+
+	PmRandom pm; 
+
+	uint to_check_cnt;
+	uint act_evi;
+
+	RenjuBoard<T>* board;
+	Player act_player;
+
+public:
+
+	RenjuPolicy () : board (NULL),pm(time(NULL)) { }
+
+	void begin_playout (RenjuBoard<T>* board_) { 
+		board = board_;
+	}
+
+	void prepare_vertex () {
+		act_player     = board->act_player ();
+		to_check_cnt   = board->empty_v_cnt;
+		act_evi        = pm.rand_int (board->empty_v_cnt); 
+	}
+
+	Vertex<T> next_vertex () {
+		Vertex<T> v;
+		while (true) {
+			if (to_check_cnt == 0) return Vertex<T>::pass ();
+			to_check_cnt--;
+			v = board->empty_v [act_evi];
+			act_evi++;
+			if (act_evi == board->empty_v_cnt) act_evi = 0;
+			return v;
+		}
+	}
+
+	void bad_vertex (Vertex<T>) {
+	}
+
+	void played_vertex (Vertex<T>) { 
+	}
+
+	void end_playout (playout_status_t) { 
+	}
+
+};
 //template<uint T> PmRandom SimplePolicy<T>::pm(123);

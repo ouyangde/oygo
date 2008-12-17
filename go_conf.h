@@ -15,7 +15,7 @@ const bool playout_print       = false;
 
 // mercy rule
 
-const bool use_mercy_rule      = false;
+const bool use_mercy_rule      = true;
 const uint mercy_threshold     = 25;
 
 // uct parameters

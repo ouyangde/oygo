@@ -264,6 +264,19 @@ public:
 		vertex_for_each_diag_nbr (center_v, nbr_v, i);      \
 	}                                                           \
 }
+#define vertex_for_each_8_nbr(center_v, nbr_v, i, block) {      	    \
+	center_v.check_is_on_board ();                            \
+	Vertex<T> nbr_v;                                    \
+	uint i;						\
+	nbr_v = center_v.N (); i=0;block;                       \
+	nbr_v = center_v.W (); i=1;block;                       \
+	nbr_v = center_v.S (); i=0;block;                       \
+	nbr_v = center_v.E (); i=1;block;                       \
+	nbr_v = center_v.NW (); i=2;block;                          \
+	nbr_v = center_v.NE (); i=3;block;                          \
+	nbr_v = center_v.SE (); i=2;block;                          \
+	nbr_v = center_v.SW (); i=3;block;                          \
+}
 //--------------------------------------------------------------------------------
 
 /*

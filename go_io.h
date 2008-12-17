@@ -7,7 +7,7 @@
 #include <basic_go_types.h>
 using namespace std;
 
-extern const char col_tab[]; // "ABCDEFGHJKLMNOPQRSTUVWXYZ";
+extern const char col_tab[27]; // "ABCDEFGHJKLMNOPQRSTUVWXYZ";
 //----------------------------
 //coord
 // TODO to gtp string
@@ -102,6 +102,40 @@ string to_string_2d (FastMap<Vertex<T>, T1>& map, int precision = 3) {
 	}
 	return out.str ();
 }
+// TODO of_gtp_string
+template<uint T> 
+no_inline
+Vertex<T> of_gtp_string (string s) {
+	const uint board_size = T;
+	char c;
+	int n;
+	coord::t row, col;
+
+	if (s == "pass" || s == "PASS" || s == "Pass") { return Vertex<T>::pass (); }
+	if (s == "resign" || s == "RESIGN" || s == "Resign") { return Vertex<T>::resign (); }
+
+	istringstream in2 (s);
+	if (!(in2 >> c >> n)) return Vertex<T>::any();
+
+	row = board_size - n;
+
+	col = 0;
+	while (col < int (sizeof(::col_tab) - 1)) {
+		if (::col_tab[col] == c || ::col_tab[col] -'A' + 'a' == c ) break;
+		col++;
+	}
+
+	if (col == int (sizeof(::col_tab) - 1)) {
+		return Vertex<T>::any();
+	}
+
+	return Vertex<T>::of_coords(row, col);
+}
+template<uint T> 
+ostream& operator<< (ostream& out, Vertex<T>& v) { 
+	out << to_string (v); 
+	return out; 
+}
 template<uint T>
 Vertex<T> of_sgf_string (string s) {
 	if (s == "") return Vertex<T>::pass ();
@@ -131,44 +165,11 @@ template<uint T>
 string to_string (Move<T>& m) {
 	return to_string(m.get_player()) + " " + to_string<T>(m.get_vertex ());
 }
-// TODO of_gtp_string
-template<uint T> 
-Vertex<T> of_gtp_string (string s) {
-	const uint board_size = T;
-	char c;
-	int n;
-	coord::t row, col;
-
-	if (s == "pass" || s == "PASS" || s == "Pass") { return Vertex<T>::pass (); }
-	if (s == "resign" || s == "RESIGN" || s == "Resign") { return Vertex<T>::resign (); }
-
-	istringstream in2 (s);
-	if (!(in2 >> c >> n)) return Vertex<T>::any();
-
-	row = board_size - n;
-
-	col = 0;
-	while (col < int (sizeof(::col_tab) - 1)) {
-		if (::col_tab[col] == c || ::col_tab[col] -'A' + 'a' == c ) break;
-		col++;
-	}
-
-	if (col == int (sizeof(::col_tab) - 1)) {
-		return Vertex<T>::any();
-	}
-
-	return Vertex<T> (row, col);
-}
-template<uint T> 
-ostream& operator<< (ostream& out, Vertex<T>& v) { 
-	out << to_string (v); 
-	return out; 
-}
 
 //----------------------------
 //Board
-template<uint T>
-string to_string (const GoBoard<T>& idx, Vertex<T> mark_v = Vertex<T>::any ()) {
+template<uint T, class Derive>
+string to_string (const BasicBoard<T, Derive>& idx, Vertex<T> mark_v = Vertex<T>::any ()) {
 	ostringstream out;
 
 #define os(n)      out << " " << n
