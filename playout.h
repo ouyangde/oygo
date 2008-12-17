@@ -3,7 +3,7 @@ enum playout_status_t { pass_pass, mercy, too_long };
 
 
 // ----------------------------------------------------------------------
-template <typename Policy,uint T, class Board> 
+template <uint T, typename Policy, class Board> 
 class Playout {
 public:
 	static const uint max_playout_length = T * T * 2;
