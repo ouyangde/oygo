@@ -114,10 +114,16 @@ public:
 		//vertex_for_each_diag_nbr(v, nbr_v,i,diag_nbr_cnt[nbr_v].player_inc(pl,i));
 	}
 	void remove_stone(Player pl, Vertex<T> v) {
-		Derive* p = static_cast<Derive*>(this);
+		//Derive* p = static_cast<Derive*>(this);
 		vertex_for_each_nbr(v, nbr_v,i,nbr_cnt[nbr_v].player_dec(pl,i));
 		// ¸üÐÂ¼ç
 		//vertex_for_each_diag_nbr(v, nbr_v,i,diag_nbr_cnt[nbr_v].player_dec(pl,i));
+	}
+	void place_stone_side(Player pl, Vertex<T> v, uint i) {
+		nbr_cnt[v].player_inc(pl,i);
+	}
+	void remove_stone_side(Player pl, Vertex<T> v, uint i) {
+		nbr_cnt[v].player_dec(pl,i);
 	}
 	void check() const {
 		check_nbr_cnt();

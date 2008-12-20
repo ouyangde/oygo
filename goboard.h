@@ -14,7 +14,8 @@ public NbrCounterBoard<T, GoBoard<T> >,
 public ZobristBoard<T, GoBoard<T> >
 {
 public:
-	static const bool use_mercy_rule = true;
+	static const bool use_mercy_rule = false;
+	typedef NbrCounterBoard<T, GoBoard> NCB;
 	using BasicBoard<T, GoBoard>::empty_v_cnt;
 	using BasicBoard<T, GoBoard>::color_at;
 	using BasicBoard<T, GoBoard>::empty_v;
@@ -130,6 +131,7 @@ public: // legality functions
 		basic_play(player, v);
 		place_stone(player, v);
 		vertex_for_each_nbr(v, nbr_v,i, {
+			//NCB::place_stone_side(player, nbr_v, i);
 			if(color::is_player(color_at[nbr_v])) {
 				if(color_at[nbr_v] != color::from_player(player)) { // same color of groups
 					if(chain_lib_cnt[chain_id[nbr_v]] == 0) 
@@ -245,7 +247,7 @@ private:
 		vertex_for_each_nbr(v, nbr_v,i, chain_lib_cnt[chain_id[nbr_v]]++); //TODO: ÄÜ·ñ¸ü¿ì
 		return all_nbr_live;
 	}
-	//no_inline
+	no_inline
 	bool play_eye(Player player, Vertex<T> v) {
 		if(eye_is_ko(v)) return false;
 		uint all_nbr_live = true;
@@ -258,9 +260,10 @@ private:
 		last_empty_v_cnt = empty_v_cnt;
 		place_stone(player, v);
 		vertex_for_each_nbr(v, nbr_v,i, {
-				if((chain_lib_cnt[chain_id[nbr_v]] == 0)) 
+			//NCB::place_stone_side(player, nbr_v, i);
+			if((chain_lib_cnt[chain_id[nbr_v]] == 0)) 
 				remove_chain(nbr_v);
-				});
+		});
 		assertc(board_ac, chain_lib_cnt[chain_id[v]] != 0);
 
 		if(last_empty_v_cnt == empty_v_cnt) { // if captured exactly one stone, end this was eye
@@ -397,7 +400,10 @@ private:
 		assertc(board_ac, act_v == v);
 
 		do {
-			vertex_for_each_nbr(act_v, nbr_v,i, chain_lib_cnt[chain_id[nbr_v]]++);
+			vertex_for_each_nbr(act_v, nbr_v,i, {
+				chain_lib_cnt[chain_id[nbr_v]]++;
+				//NCB::remove_stone_side(color::to_player(old_color), nbr_v, i);
+			});
 
 			tmp_v = act_v;
 			act_v = chain_next_v[act_v];

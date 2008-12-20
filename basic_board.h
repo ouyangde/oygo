@@ -6,6 +6,7 @@ template<uint T, typename Derive>
 class BasicBoard {
 
 public:
+	static const uint board_size = T;
 	static const uint board_area = T * T;
 	static const uint max_empty_v_cnt = board_area;
 	static const uint max_game_length = board_area * 4;

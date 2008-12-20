@@ -227,6 +227,9 @@ inline void fatal_error (const char* s) {
 #endif
 
 
+/*
+ * VC++2005中使用__forceinline来强迫内联，使用__declspec(noinline)来强迫不内联
+ */
 
 #if 1
 

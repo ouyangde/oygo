@@ -3,14 +3,14 @@ enum playout_status_t { pass_pass, mercy, too_long };
 
 
 // ----------------------------------------------------------------------
-template <uint T, typename Policy, class Board> 
+template <uint T, template<uint T> class Policy, template<uint T> class Board> 
 class Playout {
 public:
 	static const uint max_playout_length = T * T * 2;
-	Policy*  policy;
-	Board*   board;
+	Policy<T>*  policy;
+	Board<T>*   board;
 
-	Playout (Policy* policy_, Board*  board_) : policy (policy_), board (board_) {}
+	Playout (Policy<T>* policy_, Board<T>*  board_) : policy (policy_), board (board_) {}
 
 	all_inline
 	void play_move () {
@@ -60,7 +60,7 @@ public:
 				return too_long;
 			}
 
-			if (Board::use_mercy_rule && uint (abs (board->approx_score ())) > mercy_threshold) {
+			if (Board<T>::use_mercy_rule && uint (abs (board->approx_score ())) > mercy_threshold) {
 				policy->end_playout (mercy);
 				return mercy;
 			}
@@ -70,7 +70,7 @@ public:
 };
 
 // ----------------------------------------------------------------------
-template<uint T> class SimplePolicy {
+template<uint T> class GoPolicy {
 protected:
 
 	PmRandom pm; 
@@ -83,7 +83,7 @@ protected:
 
 public:
 
-	SimplePolicy () : board (NULL),pm(time(NULL)) { }
+	GoPolicy () : board (NULL),pm(time(NULL)) { }
 
 	void begin_playout (GoBoard<T>* board_) { 
 		board = board_;
@@ -95,6 +95,10 @@ public:
 		act_evi        = pm.rand_int (board->empty_v_cnt); 
 	}
 
+	/*
+	 * TODO:
+	 * 这里随机下棋有个缺陷，就是坏点的下一个点有更高的机会被选择
+	 */
 	Vertex<T> next_vertex () {
 		Vertex<T> v;
 		while (true) {

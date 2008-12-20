@@ -20,13 +20,13 @@ namespace simple_playout_benchmark {
 	int                 playout_ok_score;
 	PerformanceTimer    perf_timer;
 
-	template <bool score_per_vertex,uint T,class Policy, class Board> 
-	void run(Board const * start_board, 
-		Policy * policy,
+	template <bool score_per_vertex,uint T, template<uint T> class Policy, template<uint T> class Board > 
+	void run(Board<T> const * start_board, 
+		Policy<T> * policy,
 			uint playout_cnt, 
 			ostream& out) 
 	{
-		Board  mc_board [1];
+		Board<T>  mc_board [1];
 		FastMap<Vertex<T>, int>   vertex_score;
 		playout_status_t status;
 		Player winner;
@@ -43,7 +43,7 @@ namespace simple_playout_benchmark {
 
 		perf_timer.reset();
 
-		Playout<T,Policy,Board> playout(policy, mc_board);
+		Playout<T, Policy, Board> playout(policy, mc_board);
 
 		perf_timer.start();
 		float seconds_begin = get_seconds();
@@ -138,18 +138,21 @@ int main(int argc, char** argv) {
 
 	//NbrCounter::output_eye_map();
 	//return 0;
-	//GoBoard<9> board;
-	RenjuBoard<15> board;
-	RenjuPolicy<15> policy;
+	GoBoard<9> board;
+	GoPolicy<9> policy;
+	//RenjuBoard<15> board;
+	//RenjuPolicy<15> policy;
+	/*
 	int a[][2] = {
 		{7,7},{7,8},{6,8},{6,7},{8,9}
 	};
 	pre<15>(board, a, sizeof(a)/sizeof(a[0]));
 	cout<<to_string(board)<<endl;
+	*/
 
 	ostringstream response;
 	uint playout_cnt = 100000;
-	simple_playout_benchmark::run<false,15> (&board, &policy, playout_cnt, response);
+	simple_playout_benchmark::run<false> (&board, &policy, playout_cnt, response);
 	//simple_playout_benchmark::run<false,9,SimplePolicy<9> > (&board, playout_cnt, response);
 	cout << response.str();
 	return 0;

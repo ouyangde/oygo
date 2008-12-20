@@ -17,8 +17,9 @@ namespace player {
 	const uint cnt = 3;
 
 	inline t other(t pl) {
-		//return t(pl ^ 1);
-		return t(pl ^ 3);
+		//return t(pl ^ 3);//TODO: 究竟是位运算快还是if else快？
+		if(pl == black) return white;
+		else return black;
 	}
 	inline bool in_range(t pl) {
 		return pl < wrong;
