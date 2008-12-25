@@ -208,6 +208,26 @@ public:
 		vv <= T * (Vertex<T>::dNS + Vertex<T>::dWE);   \
 	++vv)
 
+#define vertex_for_each_far_nbr(center_v, d, nbr_v, block) { \
+	Vertex<T> nbr_v; \
+	Vertex<T> vv1,vv2;\
+	coord::t row = center_v.row();\
+	coord::t col = center_v.col();\
+	coord::t left = max(col - d, 0);\
+	coord::t right = min(col + d, int(T) - 1);\
+	coord::t top = max(row - d, 0);\
+	coord::t bottom = min(row + d, int(T) - 1);\
+	Vertex<T> tl = Vertex<T>::of_coords(top, left);\
+	Vertex<T> tr = Vertex<T>::of_coords(top, right);\
+	Vertex<T> bl = Vertex<T>::of_coords(bottom, left);\
+	Vertex<T> br = Vertex<T>::of_coords(bottom, right);\
+	for (vv1 = tl, vv2 = tr; vv1 <= bl; vv1 = vv1.S(), vv2 = vv2.S()) {\
+		for (nbr_v = vv1; nbr_v <= vv2; ++nbr_v) {\
+			block;\
+		}\
+	}\
+}
+
 /*
  * аз╣Ц
  */

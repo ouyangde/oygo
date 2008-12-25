@@ -143,8 +143,8 @@ public:
 
 	void prepare_vertex () {
 		act_player     = board->act_player ();
-		to_check_cnt   = board->empty_v_cnt;
-		act_evi        = pm.rand_int (board->empty_v_cnt); 
+		to_check_cnt   = board->good_v_cnt;
+		act_evi        = pm.rand_int (to_check_cnt); 
 	}
 
 	Vertex<T> next_vertex () {
@@ -152,9 +152,9 @@ public:
 		while (true) {
 			if (to_check_cnt == 0) return Vertex<T>::pass ();
 			to_check_cnt--;
-			v = board->empty_v [act_evi];
+			v = board->good_v [act_evi];
 			act_evi++;
-			if (act_evi == board->empty_v_cnt) act_evi = 0;
+			if (act_evi == board->good_v_cnt) act_evi = 0;
 			return v;
 		}
 	}

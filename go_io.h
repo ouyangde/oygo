@@ -57,13 +57,23 @@ Color from_char(char c) {
 }
 char to_char(Color cl) {
 	switch (cl) {
-		case color::black:      return '#';
+		case color::black:      return 'X';
 		case color::white:      return 'O';
 		case color::empty:      return '.';
 		case color::off_board:  return ' ';
 		default : assertc (color_ac, false);
 	}
 	return '?';
+}
+string to_string(Color cl) {
+	switch (cl) {
+		case color::white:      return "¡ñ";
+		case color::black:      return "¡ð";
+		case color::empty:      return "©à";
+		case color::off_board:  return "¡¡";
+		default : assertc (color_ac, false);
+	}
+	return "?";
 }
 //----------------------------
 //Vertex
@@ -173,6 +183,7 @@ string to_string (const BasicBoard<T, Derive>& idx, Vertex<T> mark_v = Vertex<T>
 	ostringstream out;
 
 #define os(n)      out << " " << n
+#define oa(n)      out << " " << n
 #define o_left(n)  out << "(" << n
 #define o_right(n) out << ")" << n
 
@@ -188,9 +199,10 @@ string to_string (const BasicBoard<T, Derive>& idx, Vertex<T> mark_v = Vertex<T>
 		coord_for_each (col) {
 			Vertex<T> v = Vertex<T>::of_coords(row, col);
 			char ch = ::to_char(idx.color_at [v]);
+			//string ch = ::to_string(idx.color_at [v]);
 			if      (v == mark_v)        o_left  (ch);
 			else if (v == mark_v.E ())   o_right (ch);
-			else                         os (ch);
+			else                         oa (ch);
 		}
 		if (board_size >= 10 && board_size - row < 10) out << " ";
 		os (::row_to_string<T> (row));

@@ -15,6 +15,7 @@ public:
 	static const bool use_mercy_rule = true;
 	using BasicBoard<T, RenjuBoard>::empty_v_cnt;
 	using BasicBoard<T, RenjuBoard>::color_at;
+	using BasicBoard<T, RenjuBoard>::board_area;
 	using BasicBoard<T, RenjuBoard>::empty_v;
 	using BasicBoard<T, RenjuBoard>::player_v_cnt;
 	using BasicBoard<T, RenjuBoard>::move_history;
@@ -28,6 +29,10 @@ public:
 	Vertex<T> chain_next_v[4][Vertex<T>::cnt];
 	uint chain_length[4][Vertex<T>::cnt]; // indexed by chain_id 棋串的长度
 	uint chain_id[4][Vertex<T>::cnt]; // 每个点所属的4个方向上的棋串id
+	FastMap<Vertex<T>, bool>        good_at; // 是否good 
+	FastMap<Vertex<T>, uint>        good_pos; // good vetex在good_v中的索引
+	Vertex<T>                       good_v[board_area]; // 棋盘上的空点
+	uint                         	good_v_cnt;
 public:                         // board interface
 	RenjuBoard() {
 		vertex_for_each_all(v) {
@@ -36,7 +41,13 @@ public:                         // board interface
 				chain_id[i][v] = v;
 				chain_length[i][v] = 0;
 			}
+			good_at[v] = false;
 		}
+		good_v_cnt  = 0;
+		Vertex<T> v = Vertex<T>::of_coords(T/2,T/2);
+		good_at[v] = true;
+		good_pos[v] = good_v_cnt;
+		good_v[good_v_cnt++] = v;
 		komi = 0;
 	}
 	all_inline 
@@ -97,9 +108,22 @@ private:
 	void basic_play(Player player, Vertex<T> v) { // Warning: has to be called before place_stone, because of hash storing
 		BasicBoard<T, RenjuBoard>::play(player, v);
 	}
+
 	void place_stone(Player player, Vertex<T> v) {
 		BasicBoard<T, RenjuBoard>::place_stone(player, v);
 		NbrCounterBoard<T, RenjuBoard>::place_stone(player, v);
+		if(good_at[v]) {
+			good_v_cnt--;
+			good_pos[good_v[good_v_cnt]] = good_pos[v];
+			good_v[good_pos[v]] = good_v[good_v_cnt];
+		}
+		vertex_for_each_far_nbr(v, 1, nbr_v, {
+			if(!good_at[nbr_v] && color_at[nbr_v] == color::empty) {
+				good_at[nbr_v] = true;
+				good_pos[nbr_v] = good_v_cnt;
+				good_v[good_v_cnt++] = nbr_v;
+			}
+		});
 	}
 	void remove_stone(Player pl, Vertex<T> v) {
 		// 按照place_stone相反的顺序

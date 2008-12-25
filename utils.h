@@ -1,6 +1,8 @@
 #ifndef _UTILS_H_
 #define _UTILS_H_
+#ifdef unix
 #include <sys/resource.h>
+#endif
 #include <iostream>
 //#include <string>
 //#include <sstream>
@@ -200,9 +202,14 @@ public:
 
 
 inline float get_seconds () {
+#ifdef unix
 	rusage usage [1];
 	getrusage (RUSAGE_SELF, usage);
 	return float(usage->ru_utime.tv_sec) + float(usage->ru_utime.tv_usec) / 1000000.0;
+#else
+	return float(clock()) / CLOCKS_PER_SEC;
+
+#endif
 }
 
 inline void fatal_error (const char* s) {
@@ -231,7 +238,7 @@ inline void fatal_error (const char* s) {
  * VC++2005中使用__forceinline来强迫内联，使用__declspec(noinline)来强迫不内联
  */
 
-#if 1
+#if 0
 
 #define no_inline   __attribute__((noinline))
 #define flatten     __attribute__((flatten))

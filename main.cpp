@@ -12,6 +12,7 @@ using namespace std;
 #include "renjuboard.h"
 #include "playout.h"
 #include "go_io.h"
+#include "uct.h"
 namespace simple_playout_benchmark {
 
 
@@ -53,6 +54,7 @@ namespace simple_playout_benchmark {
 		rep(ii, playout_cnt) {
 			mc_board->load(start_board);
 			status = playout.run();
+			//cerr<<to_string(*mc_board)<<endl;
 			switch(status) {
 				case pass_pass:
 					playout_ok_cnt += 1;
@@ -131,6 +133,37 @@ void pre(Board & board, int a[][2], int size) {
 	for(int i = 0; i < size; i++)
 	board.play(board.act_player(), Vertex<T>::of_coords(a[i][0], a[i][1]));
 }
+template <uint T, template<uint T> class Policy, template<uint T> class Board> 
+void match_human(Board<T>* board, Policy<T>* policy, bool aifirst = true) {
+
+	UCT<T, Policy, Board>* engine = new UCT<T, Policy, Board>(board, policy);
+
+	if(aifirst) {
+		Player pl = board->act_player();
+		Vertex<T> v = engine->gen_move(pl);
+		board->play(pl, v);
+		cout<<to_string(*board);
+		cout<<"= "<<v<<endl;
+	}
+	while(true) {
+		string line;
+		if (!getline(cin, line)) break;
+		Vertex<T> v = of_gtp_string<T>(line);
+		Player pl = board->act_player();
+		if(v == Vertex<T>::any() || board->color_at[v] != color::empty || !board->play(pl,v)) {
+			cout<<"?"<<endl;
+			continue;
+		}
+		engine->play(pl,v);
+		pl = board->act_player();
+		v = engine->gen_move(pl);
+		if(v != Vertex<T>::resign()) {
+			board->play(pl, v);
+		}
+		cout<<to_string(*board);
+		cout<<"= "<<v<<endl;
+	}
+}
 // main
 int main(int argc, char** argv) { 
 	setvbuf(stdout, (char *)NULL, _IONBF, 0);
@@ -140,20 +173,14 @@ int main(int argc, char** argv) {
 	//return 0;
 	GoBoard<9> board;
 	GoPolicy<9> policy;
-	//RenjuBoard<15> board;
-	//RenjuPolicy<15> policy;
-	/*
-	int a[][2] = {
-		{7,7},{7,8},{6,8},{6,7},{8,9}
-	};
-	pre<15>(board, a, sizeof(a)/sizeof(a[0]));
-	cout<<to_string(board)<<endl;
-	*/
+	//RenjuBoard<13> board;
+	//RenjuPolicy<13> policy;
 
 	ostringstream response;
 	uint playout_cnt = 100000;
-	simple_playout_benchmark::run<false> (&board, &policy, playout_cnt, response);
-	//simple_playout_benchmark::run<false,9,SimplePolicy<9> > (&board, playout_cnt, response);
-	cout << response.str();
+	//playout_cnt = 1;
+	//simple_playout_benchmark::run<false> (&board, &policy, playout_cnt, response);
+	//cout << response.str();
+	match_human(&board, &policy,true);
 	return 0;
 }

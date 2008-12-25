@@ -1,3 +1,3 @@
 noinst_PROGRAMS=oygo
 oygo_SOURCES=main.cpp defines.cpp
-CXXFLAGS= -g -O3 -fomit-frame-pointer
+CXXFLAGS= -g -O3 -fomit-frame-pointer #-mno-cygwin

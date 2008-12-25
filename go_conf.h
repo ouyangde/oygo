@@ -20,15 +20,15 @@ const uint mercy_threshold     = 25;
 
 // uct parameters
 
-const float initial_value                 = 0.0;
-const float initial_bias                  = 1.0;
+const uint initial_value                 = 0;
+const uint initial_bias                  = 0;
 const float mature_bias_threshold         = initial_bias + 100.0;
 const float explore_rate                  = 1.0;
 const uint  uct_max_depth                 = 1000;
-const uint  uct_max_nodes                 = 1000000;
-const float resign_value                  = 0.95;
+const uint  uct_max_nodes                 = 4000000;
+const float resign_value                  = 0.35;
 const uint  uct_genmove_playout_cnt       = 50000;
-const float print_visit_threshold_base    = 500.0;
+const float print_visit_threshold_base    = 50.0;
 const float print_visit_threshold_parent  = 0.02;
 
 
@@ -71,5 +71,5 @@ const bool aaf_ac             = false;
 const bool uct_ac             = false;
 const bool tree_ac            = false;
 const bool pool_ac            = false;
-const bool gtp_ac             = true;
+const bool gtp_ac             = false;
 #endif // _GO_CONF_
