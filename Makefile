@@ -85,7 +85,7 @@ CPP = gcc -E
 CPPFLAGS = 
 CXX = g++
 CXXDEPMODE = depmode=gcc3
-CXXFLAGS = -g -O3 -fomit-frame-pointer #-mno-cygwin
+CXXFLAGS = -g -O3 -fomit-frame-pointer -mno-cygwin
 CYGPATH_W = cygpath -w
 DEFS = -DHAVE_CONFIG_H
 DEPDIR = .deps

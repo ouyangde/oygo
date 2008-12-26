@@ -3,6 +3,7 @@
 #include <string>
 #include <sstream>
 #include <iostream>
+#include <fstream>
 #include <iomanip>
 #include <cmath>
 using namespace std;
@@ -142,8 +143,8 @@ void match_human(Board<T>* board, Policy<T>* policy, bool aifirst = true) {
 		Player pl = board->act_player();
 		Vertex<T> v = engine->gen_move(pl);
 		board->play(pl, v);
-		cout<<to_string(*board);
-		cout<<"= "<<v<<endl;
+		cerr<<to_string(*board);
+		cout<<"="<<v<<endl;
 	}
 	while(true) {
 		string line;
@@ -160,10 +161,31 @@ void match_human(Board<T>* board, Policy<T>* policy, bool aifirst = true) {
 		if(v != Vertex<T>::resign()) {
 			board->play(pl, v);
 		}
-		cout<<to_string(*board);
-		cout<<"= "<<v<<endl;
+		cerr<<to_string(*board);
+		cout<<"="<<v<<endl;
 	}
 }
+bool parse_arg(int argc, char** argv) {
+	bool ret = true;
+	while(--argc > 0) {
+		switch(argv[argc][0]) {
+			case '1': ret = false;
+				  break;
+			case '-': argv[argc]+=2;
+				  {
+					  int time = atoi(argv[argc]);
+					  if(time != 0) {
+						  time_per_move = time;
+					  }
+				  }
+				  break;
+			default:
+				  break;
+		}
+	}
+	return ret;
+}
+float time_per_move		  = 9.0;
 // main
 int main(int argc, char** argv) { 
 	setvbuf(stdout, (char *)NULL, _IONBF, 0);
@@ -181,6 +203,9 @@ int main(int argc, char** argv) {
 	//playout_cnt = 1;
 	//simple_playout_benchmark::run<false> (&board, &policy, playout_cnt, response);
 	//cout << response.str();
-	match_human(&board, &policy,argc == 1);
+	
+	ofstream fout("log.txt"); 
+	cerr.rdbuf(fout.rdbuf());
+	match_human(&board, &policy, parse_arg(argc, argv));
 	return 0;
 }
