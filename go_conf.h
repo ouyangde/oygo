@@ -28,7 +28,7 @@ const uint  uct_max_depth                 = 1000;
 // how many memory would be use
 const uint  uct_node_memory               = 40;
 const uint  uct_max_nodes                 = uct_node_memory * 1000000 / 20;
-const float time_per_move		  = 5.0;
+const float time_per_move		  = 9.0;
 const uint  uct_max_level       	  = 19;
 const uint  uct_genmove_playout_cnt       = 100000;
 const float resign_value                  = 0.45;

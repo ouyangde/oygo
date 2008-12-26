@@ -86,10 +86,12 @@ public:                         // board interface
 				}
 			}
 		});
-		rep(i, 4) {
-			if(chain_length[i][chain_id[i][v]] >= 5) {
-				komi = (player == player::black) ? 500 : -500;
-				break;
+		if(komi == 0) {
+			rep(i, 4) {
+				if(chain_length[i][chain_id[i][v]] >= 5) {
+					komi = (player == player::black) ? 500 : -500;
+					break;
+				}
 			}
 		}
 		return true;
