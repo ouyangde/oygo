@@ -156,8 +156,8 @@ public:
 		count++;
 	}
 	bool is_mature () { 
-		//return count > mature_bias_threshold; 
-		return count > initial_bias; 
+		return count > mature_bias_threshold; 
+		//return count > initial_bias; 
 	}
 	bool no_children() {
 		return first_child == NULL;
@@ -182,6 +182,34 @@ public:
 
 		assertc (tree_ac, best_child != NULL); // at least pass
 		return best_child;
+	}
+	bool remove_bad_child() {
+		Node* worst_child = NULL;
+		float worst_urgency = large_float;
+		float explore_coeff = log(count) * explore_rate;
+
+		node_for_each_child (this, child, {
+			float child_urgency = child->value();
+			if (child_urgency < worst_urgency) {
+				worst_urgency  = child_urgency;
+				worst_child    = child;
+			}
+		});
+		if(worst_child == this->first_child && worst_child->sibling == NULL) {
+			// this is the last one
+			return false;
+		}
+		this->remove_child(worst_child);
+		free_subtree(worst_child);
+		delete worst_child;
+
+		return true;
+	}
+	void free_subtree(Node<T>* parent) {
+		node_for_each_child(parent, child, {
+			free_subtree(child);
+			delete child;
+		});
 	}
 	Node* find_most_explored_child() {
 		Node* best_child = NULL;
@@ -259,12 +287,6 @@ public:
 		delete act_node();
 		history_top--;
 	} 
-	void free_subtree(Node<T>* parent) {
-		node_for_each_child(parent, child, {
-			free_subtree(child);
-			delete child;
-		});
-	}
 	// TODO free history (for sync with base board)
 
 	// 因为某个原因，这里的act_player的含义是颠倒的
@@ -386,14 +408,19 @@ public:
 		Node<T>* new_root = NULL;
 		node_for_each_child(tree->root, child, {
 			if(v != child->v) {
-				tree->free_subtree(child);
+				tree->root->free_subtree(child);
 				delete child;
 			} else {
 				new_root = child;
 			}
 		});
-		assert(new_root != NULL);
-		new_root->sibling = NULL;
+		//assert(new_root != NULL);
+		if(new_root == NULL) {
+			new_root = new Node<T>;
+			new_root->init(v);
+		} else {
+			new_root->sibling = NULL;
+		}
 		delete tree->root;
 		tree->root = new_root;
 	}
@@ -401,13 +428,28 @@ public:
 	Vertex<T> gen_move(Player player) {
 		Node<T>* best;
 		tree->max_top = 0;
-
 		//root_ensure_children_legality(player);
+		//rep(ii, uct_genmove_playout_cnt) do_playout(player);
+		float seconds_begin = get_seconds();
+		float seconds_end = 0;
+		const uint split_cnt = 1000;
+		while(true) {
+			if(Node<T>::free_count() < split_cnt * base_board->empty_v_cnt) {
+				if(!tree->root->remove_bad_child()) {
+					break;
+				}
+				continue;
+			}
+			rep(ii, split_cnt) do_playout(player);
+			seconds_end = get_seconds();
+			if(seconds_end - seconds_begin > time_per_move) break;
+			if(tree->max_top > uct_max_level) break;
+		}
 
-		rep(ii, uct_genmove_playout_cnt) do_playout(player);
 		//rep(ii, 300) do_playout(player);
 		//best = tree->root->find_most_explored_child();
 		best = tree->root->find_max_value_child();
+		float seconds_total = seconds_end - seconds_begin;
 		assertc(uct_ac, best != NULL);
 
 		tree->dump(player);
@@ -415,6 +457,7 @@ public:
 		best->dump();
 		cerr<<"level:"<<tree->max_top<<endl;
 		cerr<<"memory free:"<<Node<T>::free_count()<<endl;
+		cerr<<"time:"<<seconds_total<<endl;
 		float bestvalue = best->value();
 		if(bestvalue < -resign_value) return Vertex<T>::resign();
 		play(player, best->v);

@@ -171,16 +171,16 @@ int main(int argc, char** argv) {
 
 	//NbrCounter::output_eye_map();
 	//return 0;
-	GoBoard<9> board;
-	GoPolicy<9> policy;
-	//RenjuBoard<13> board;
-	//RenjuPolicy<13> policy;
+	//GoBoard<9> board;
+	//GoPolicy<9> policy;
+	RenjuBoard<15> board;
+	RenjuPolicy<15> policy;
 
 	ostringstream response;
 	uint playout_cnt = 100000;
 	//playout_cnt = 1;
 	//simple_playout_benchmark::run<false> (&board, &policy, playout_cnt, response);
 	//cout << response.str();
-	match_human(&board, &policy,true);
+	match_human(&board, &policy,argc == 1);
 	return 0;
 }

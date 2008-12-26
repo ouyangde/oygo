@@ -9,7 +9,7 @@ typedef unsigned char uint8;
 // constants
 
 // board parameters
-const float default_komi       = 5.5;
+const float default_komi       = 0.5;
 const uint default_board_size  = 9;
 const bool playout_print       = false;
 
@@ -22,13 +22,17 @@ const uint mercy_threshold     = 25;
 
 const uint initial_value                 = 0;
 const uint initial_bias                  = 0;
-const float mature_bias_threshold         = initial_bias + 100.0;
+const float mature_bias_threshold         = initial_bias + 100;
 const float explore_rate                  = 1.0;
 const uint  uct_max_depth                 = 1000;
-const uint  uct_max_nodes                 = 4000000;
-const float resign_value                  = 0.35;
-const uint  uct_genmove_playout_cnt       = 50000;
-const float print_visit_threshold_base    = 50.0;
+// how many memory would be use
+const uint  uct_node_memory               = 40;
+const uint  uct_max_nodes                 = uct_node_memory * 1000000 / 20;
+const float time_per_move		  = 5.0;
+const uint  uct_max_level       	  = 19;
+const uint  uct_genmove_playout_cnt       = 100000;
+const float resign_value                  = 0.45;
+const float print_visit_threshold_base    = 500.0;
 const float print_visit_threshold_parent  = 0.02;
 
 
