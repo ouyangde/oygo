@@ -143,6 +143,7 @@ void match_human(Board<T>* board, Policy<T>* policy, bool aifirst = true) {
 		Player pl = board->act_player();
 		Vertex<T> v = engine->gen_move(pl);
 		board->play(pl, v);
+		engine->play(pl,v);
 		cerr<<to_string(*board);
 		cout<<"="<<v<<endl;
 	}
@@ -160,6 +161,7 @@ void match_human(Board<T>* board, Policy<T>* policy, bool aifirst = true) {
 		v = engine->gen_move(pl);
 		if(v != Vertex<T>::resign()) {
 			board->play(pl, v);
+			engine->play(pl,v);
 		}
 		cerr<<to_string(*board);
 		cout<<"="<<v<<endl;
@@ -185,7 +187,7 @@ bool parse_arg(int argc, char** argv) {
 	}
 	return ret;
 }
-float time_per_move		  = 9.0;
+float time_per_move		  = 1.0;
 // main
 int main(int argc, char** argv) { 
 	setvbuf(stdout, (char *)NULL, _IONBF, 0);
@@ -193,8 +195,8 @@ int main(int argc, char** argv) {
 
 	//NbrCounter::output_eye_map();
 	//return 0;
-	//GoBoard<9> board;
-	//GoPolicy<9> policy;
+	//GoBoard<19> board;
+	//GoPolicy<19> policy;
 	RenjuBoard<15> board;
 	RenjuPolicy<15> policy;
 
@@ -205,7 +207,9 @@ int main(int argc, char** argv) {
 	//cout << response.str();
 	
 	ofstream fout("log.txt"); 
-	cerr.rdbuf(fout.rdbuf());
+	if(argc > 1) {
+		cerr.rdbuf(fout.rdbuf());
+	}
 	match_human(&board, &policy, parse_arg(argc, argv));
 	return 0;
 }

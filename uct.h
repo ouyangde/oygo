@@ -25,6 +25,35 @@ public:
 		index[free_count++] = p;  
 	}
 };
+class Stat {
+public:
+  float sample_count;
+  float sample_sum;
+  uint ref;
+  Hash hash;
+  Player pl;
+
+  Stat () {
+    reset ();
+    ref = 0;
+  }
+  void reset () {
+    sample_count       = 0; // TODO 
+    sample_sum         = 0.0; // TODO
+  }
+  void update_win() {
+    sample_sum         += 1;
+    sample_count       += 1.0;
+  }
+  void update_loss() {
+    sample_sum         -= 1;
+    sample_count       += 1.0;
+  }
+  float mean () { 
+    return sample_sum / sample_count; 
+  }
+  float count () { return sample_count; }
+};
 #define node_for_each_child(node, act_node, i) do {   \
 	assertc (tree_ac, node!= NULL);                         \
 	Node<T>* act_node;                                       \
@@ -35,15 +64,25 @@ public:
 	}                                                       \
 } while (false)
 
+const uint  uct_max_nodes = uct_node_memory * 1000000 / 16;
+const uint  ucg_max_nodes = uct_node_memory * 1000000 / 16;
+const uint  ucg_max_hash = uct_node_memory * 1000000 / sizeof(20);
 // class Node
 template<uint T>
 class Node {
-	static Pool<Node, uct_max_nodes> m_pool;
+	static Pool<Node, ucg_max_nodes> m_pool;
+	static Stat* m_statpool;
 public:
 	Vertex<T> v;
-	int    win;
-	uint    count;
-	float value() { return float(win)/float(count); }
+	Stat* stat;
+	float value() { 
+		if(stat) return stat->mean();
+		return large_float; 
+	}
+	float count() { 
+		if(stat) return stat->count(); 
+		else return 0;
+	}
 	Node*  first_child;			// head of list of moves of particular player 
 	Node*  sibling;                           // NULL if last child
 	static void * operator new(size_t t) {
@@ -59,8 +98,8 @@ public:
 public:
 	void dump() {
 		cerr<<v
-			<<","<<value()
-			<<","<<count
+			<<","<<stat->mean()
+			<<","<<stat->count()
 			<<endl;
 	}
 	void rec_print(ostream& out, uint depth, Player pl) {
@@ -69,7 +108,7 @@ public:
 			<< to_string(pl) << " "
 			<< v << " "
 			<< value() << " "
-			<< "(" << count - initial_bias << ")"
+			<< "(" << count() - initial_bias << ")"
 			<< endl;
 
 		rec_print_children (out, depth, player::other(pl));
@@ -82,7 +121,7 @@ public:
 
 		child_tab_size  = 0;
 		best_child_idx  = 0;
-		min_visit_cnt   = max(print_visit_threshold_base, (count - initial_bias) * print_visit_threshold_parent);
+		min_visit_cnt   = max(print_visit_threshold_base, (count() - initial_bias) * print_visit_threshold_parent);
 		// we want to be visited at least initial_bias times + some percentage of parent's visit_cnt
 
 		// prepare for selection sort
@@ -97,7 +136,7 @@ public:
 					best_child_idx = ii;
 			}
 			// rec call
-			if (best_child->count - initial_bias >= min_visit_cnt)
+			if (best_child->count() - initial_bias >= min_visit_cnt)
 				child_tab [best_child_idx]->rec_print (out, depth + 1, player);
 			else break;
 
@@ -107,14 +146,51 @@ public:
 
 #undef best_child
 	}
-
-
-	void init(Vertex<T> v) {
+	Node(Vertex<T> v) {
 		this->v       = v;
-		win         = initial_value;
-		count         = initial_bias;
 		first_child   = NULL;
 		sibling       = NULL;
+		stat = NULL;
+	}
+
+	~Node() {
+		if(stat) {
+			stat->ref--;
+		}
+	}
+	//void init(Vertex<T> v) {
+	//}
+
+	void initstat() {
+		static Stat s_stat;
+		if(stat) return;
+		stat = &s_stat;
+		stat->ref++;
+	}
+
+	void initstat(Player pl, Hash hash) {
+		if(stat) return;
+		uint idx_start = hash.hash % ucg_max_hash;
+		uint pos = idx_start;
+		while(m_statpool[pos].ref) {
+			//cerr<<"exists"<<endl;
+			if(m_statpool[pos].hash == hash && m_statpool[pos].pl == pl) {
+				stat = &(m_statpool[pos]);
+				m_statpool[pos].ref++;
+				return;
+			} else {
+				pos = (pos + 1) % ucg_max_hash;
+			}
+			if(pos == idx_start) {
+				cerr<<"new stat"<<endl;
+				stat = new Stat;
+				return;
+			}
+		}
+		m_statpool[pos].ref = 1;
+		m_statpool[pos].pl = pl;
+		m_statpool[pos].hash = hash;
+		stat = &(m_statpool[pos]);
 	}
 	void add_child(Node* new_child) { // TODO sorting?
 		assertc(tree_ac, new_child->sibling == NULL); 
@@ -144,19 +220,19 @@ public:
 		}
 	}
 	float UCB(float explore_coeff) { 
-		if(!count) return large_float;
-		return value() + sqrt (explore_coeff / count);
+		if(!count()) return large_float;
+		return value() + sqrt (explore_coeff / count());
 	}
 	void update_win() {
-		win++; 
-		count++;
+		assert(stat != NULL);
+		stat->update_win();
 	}
 	void update_loss() {
-		win--;
-		count++;
+		assert(stat != NULL);
+		stat->update_loss();
 	}
 	bool is_mature () { 
-		return count > mature_bias_threshold; 
+		return count() > mature_bias_threshold; 
 		//return count > initial_bias; 
 	}
 	bool no_children() {
@@ -169,7 +245,7 @@ public:
 
 		best_child     = NULL;
 		best_urgency   = -large_float;
-		explore_coeff  = log(count) * explore_rate;
+		explore_coeff  = log(count()) * explore_rate;
 
 		node_for_each_child (this, child, {
 			float child_urgency = child->UCB(explore_coeff);
@@ -186,7 +262,7 @@ public:
 	bool remove_bad_child() {
 		Node* worst_child = NULL;
 		float worst_urgency = large_float;
-		float explore_coeff = log(count) * explore_rate;
+		float explore_coeff = log(count()) * explore_rate;
 
 		node_for_each_child (this, child, {
 			float child_urgency = child->value();
@@ -259,8 +335,11 @@ public:
 	}
 
 	UCBTree () {
-		root = new Node<T>;
-		root->init(Vertex<T>::any());
+		root = new Node<T>(Vertex<T>::any());
+		//root->init(Vertex<T>::any());
+		Hash hash;
+		hash.set_zero();
+		root->initstat(player::black, hash);
 		history_top = 0;
 		max_top = 0;
 	}
@@ -277,8 +356,8 @@ public:
 		assertc(tree_ac, act_node() != NULL);
 	}  
 	void alloc_child(Vertex<T> v) {
-		Node<T>* new_node = new Node<T>;
-		new_node->init(v);
+		Node<T>* new_node = new Node<T>(v);
+		//new_node->init(v);
 		act_node()->add_child(new_node);
 	}  
 	void delete_act_node() {
@@ -320,9 +399,6 @@ public:
 		this->policy = policy;
 		this->base_board = board;
 	}
-	Vertex<T> genmove(Player pl) {
-		return Vertex<T>::pass();
-	}
 public:
   
 	/*
@@ -345,7 +421,7 @@ public:
 	//flatten 
 	void do_playout(Player first_player) {
 		Board<T>    play_board[1]; // TODO test for perfomance + memcpy
-		bool was_pass[player::cnt];
+		//bool was_pass[player::cnt];
 		Player   act_player = first_player;
 		Vertex<T>   v;
 
@@ -353,8 +429,8 @@ public:
 		play_board->load(base_board);
 		tree->history_reset();
 
-		player_for_each (pl) 
-			was_pass [pl] = false; // TODO maybe there was one pass ?
+		//player_for_each (pl) 
+			//was_pass [pl] = false; // TODO maybe there was one pass ?
 
 		do {
 			// 叶子节点
@@ -369,6 +445,7 @@ public:
 					});
 					continue;
 				} else {
+					tree->act_node()->initstat(act_player, play_board->hash);
 					// 否则进行模拟
 					// TODO assert act_plauer == board->Act_player ()
 					Playout<T, Policy, Board>(policy, play_board).run();
@@ -393,9 +470,10 @@ public:
 				continue; //TODO: return?
 			}
 
-			was_pass [act_player]  = (v == Vertex<T>::pass());
-			//if(play_board->both_player_pass()) break;
-			if (was_pass [player::black] & was_pass [player::white]) {
+			//was_pass [act_player]  = (v == Vertex<T>::pass());
+			if(play_board->both_player_pass()) {
+			//if (was_pass [player::black] & was_pass [player::white]) {
+				tree->act_node()->initstat();
 				tree->update_history(play_board->winner(), act_player);
 				break;
 			}
@@ -416,8 +494,9 @@ public:
 		});
 		//assert(new_root != NULL);
 		if(new_root == NULL) {
-			new_root = new Node<T>;
-			new_root->init(v);
+			new_root = new Node<T>(v);
+			//new_root->init(v);
+			new_root->initstat(player::other(pl), base_board->hash);
 		} else {
 			new_root->sibling = NULL;
 		}
@@ -460,12 +539,12 @@ public:
 		cerr<<"time:"<<seconds_total<<endl;
 		float bestvalue = best->value();
 		if(bestvalue < -resign_value) return Vertex<T>::resign();
-		play(player, best->v);
 		return best->v;
 	}
 };
 template<uint T>
 // TODO:UCG将节点状态单独存储，用hash索引
-// TODO:节点内存不够时，将低UCB值的节点砍去
-Pool<Node<T>, uct_max_nodes> Node<T>::m_pool;
+Pool<Node<T>, ucg_max_nodes> Node<T>::m_pool;
+template<uint T>
+Stat* Node<T>::m_statpool = new Stat[ucg_max_hash];
 #endif

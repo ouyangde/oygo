@@ -9,10 +9,11 @@
 template<uint T> 
 class RenjuBoard:
 public BasicBoard<T, RenjuBoard<T> >,
-public NbrCounterBoard<T, RenjuBoard<T> >
+public ZobristBoard<T, RenjuBoard<T> >
 {
 public:
 	static const bool use_mercy_rule = true;
+	static const int renju_distance = 1;
 	using BasicBoard<T, RenjuBoard>::empty_v_cnt;
 	using BasicBoard<T, RenjuBoard>::color_at;
 	using BasicBoard<T, RenjuBoard>::board_area;
@@ -21,8 +22,6 @@ public:
 	using BasicBoard<T, RenjuBoard>::move_history;
 	using BasicBoard<T, RenjuBoard>::move_no;
 	using BasicBoard<T, RenjuBoard>::max_game_length;
-	using NbrCounterBoard<T, RenjuBoard>::nbr_cnt;
-	using NbrCounterBoard<T, RenjuBoard>::diag_nbr_cnt;
 
 	int                          komi;
 	//FastMap<Vertex<T>, Vertex<T> >  chain_next_v;
@@ -122,13 +121,13 @@ private:
 
 	void place_stone(Player player, Vertex<T> v) {
 		BasicBoard<T, RenjuBoard>::place_stone(player, v);
-		NbrCounterBoard<T, RenjuBoard>::place_stone(player, v);
+		ZobristBoard<T, RenjuBoard>::place_stone(player, v);
 		if(good_at[v]) {
 			good_v_cnt--;
 			good_pos[good_v[good_v_cnt]] = good_pos[v];
 			good_v[good_pos[v]] = good_v[good_v_cnt];
 		}
-		vertex_for_each_far_nbr(v, 1, nbr_v, {
+		vertex_for_each_far_nbr(v, renju_distance, nbr_v, {
 			if(!good_at[nbr_v] && color_at[nbr_v] == color::empty) {
 				good_at[nbr_v] = true;
 				good_pos[nbr_v] = good_v_cnt;
@@ -138,7 +137,7 @@ private:
 	}
 	void remove_stone(Player pl, Vertex<T> v) {
 		// 按照place_stone相反的顺序
-		NbrCounterBoard<T, RenjuBoard>::remove_stone(pl, v);
+		ZobristBoard<T, RenjuBoard>::remove_stone(pl, v);
 		BasicBoard<T, RenjuBoard>::remove_stone(pl, v);
 	}
 	void merge_chains(Vertex<T> v_base, Vertex<T> v_new, uint i) {
@@ -159,7 +158,6 @@ public:                         // consistency checks
 	void check() const { // 检查整个棋盘一致性
 		if(!board_ac) return;
 		BasicBoard<T, RenjuBoard>::check();
-		NbrCounterBoard<T, RenjuBoard>::check();
 	}
 };
 #endif //_RENJU_BOARD_H_
