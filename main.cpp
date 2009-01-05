@@ -200,8 +200,8 @@ int main(int argc, char** argv) {
 	//RenjuBoard<15> board;
 	//RenjuPolicy<15> policy;
 
-	ostringstream response;
-	uint playout_cnt = 100000;
+	//ostringstream response;
+	//uint playout_cnt = 100000;
 	//playout_cnt = 1;
 	//simple_playout_benchmark::run<false> (&board, &policy, playout_cnt, response);
 	//cout << response.str();

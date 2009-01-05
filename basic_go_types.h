@@ -137,9 +137,11 @@ public:
 
 	const static uint cnt = (T + 2) * (T + 2);
 
-	explicit Vertex () { } // TODO is it needed
-	explicit Vertex (uint _idx) { idx = _idx; }
+	//explicit Vertex () { } // TODO is it needed
+	//explicit Vertex (uint _idx) { idx = _idx; }
+	static Vertex of(uint _idx) { Vertex v; v.idx=_idx; return v; }
 
+	//Vertex operator =(uint _idx) { idx = _idx; }
 	operator uint() const { return idx; }
 
 	bool operator== (Vertex other) const { return idx == other.idx; }
@@ -163,10 +165,10 @@ public:
 		assertc (vertex_ac, is_on_board ()); 
 	}
 
-	Vertex N () const { return Vertex (idx - dNS); }
-	Vertex W () const { return Vertex (idx - dWE); }
-	Vertex E () const { return Vertex (idx + dWE); }
-	Vertex S () const { return Vertex (idx + dNS); }
+	Vertex N () const { return of (idx - dNS); }
+	Vertex W () const { return of (idx - dWE); }
+	Vertex E () const { return of (idx + dWE); }
+	Vertex S () const { return of (idx + dNS); }
 
 	/*
 	   Vertex NW () const { return N ().W (); } // TODO can it be faster?
@@ -174,15 +176,15 @@ public:
 	   Vertex SW () const { return S ().W (); } // only Go
 	   Vertex SE () const { return S ().E (); }
 	   */
-	Vertex NW () const { return Vertex (idx - dNS - dWE); }
-	Vertex NE () const { return Vertex (idx - dNS + dWE); }
-	Vertex SW () const { return Vertex (idx - dWE + dNS); }
-	Vertex SE () const { return Vertex (idx + dWE + dNS); }
+	Vertex NW () const { return of (idx - dNS - dWE); }
+	Vertex NE () const { return of (idx - dNS + dWE); }
+	Vertex SW () const { return of (idx - dWE + dNS); }
+	Vertex SE () const { return of (idx + dWE + dNS); }
 
 
-	static Vertex pass   () { return Vertex (Vertex::pass_idx); }
-	static Vertex any    () { return Vertex (Vertex::any_idx); }
-	static Vertex resign () { return Vertex (Vertex::resign_idx); }
+	static Vertex pass   () { return of (Vertex::pass_idx); }
+	static Vertex any    () { return of (Vertex::any_idx); }
+	static Vertex resign () { return of (Vertex::resign_idx); }
 	// TODO make this constructor a static function
 	/*
 	   Vertex (coord::t r, coord::t c) {
@@ -192,7 +194,7 @@ public:
 	   */
 	static Vertex of_coords(coord::t r, coord::t c) {
 		coord::check2<T> (r, c);
-		return Vertex((r+1) * dNS + (c+1) * dWE);
+		return of((r+1) * dNS + (c+1) * dWE);
 	}
 
 };
@@ -200,11 +202,11 @@ public:
 
 
 #define vertex_for_each_all(vv) \
-	for (Vertex<T> vv = Vertex<T>(0); vv.in_range (); ++vv) // TODO 0 works??? // TODO player the same way!
+	for (Vertex<T> vv = Vertex<T>::of(0); vv.in_range (); ++vv) // TODO 0 works??? // TODO player the same way!
 
 // misses some offboard vertices (for speed) 
 #define vertex_for_each_faster(vv)                                  \
-	for (Vertex<T> vv = Vertex<T>(Vertex<T>::dNS+Vertex<T>::dWE);                 \
+	for (Vertex<T> vv = Vertex<T>::of(Vertex<T>::dNS+Vertex<T>::dWE);                 \
 		vv <= T * (Vertex<T>::dNS + Vertex<T>::dWE);   \
 	++vv)
 

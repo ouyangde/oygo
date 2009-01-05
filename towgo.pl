@@ -85,9 +85,9 @@ my $w_gtp_ver;				# gtp version of white player
 while ($games > 0) {
     print "B:$black\tW:$white\n" if $verbose;
 
-    $pidb = open3($black_in, $black_out, $err, $black);
+    $pidb = open3($black_in, $black_out, ">&STDERR", $black);
     #print "black pid: $pidb\n" if $verbose;
-    $pidw = open3($white_in, $white_out, $err, $white." 1");
+    $pidw = open3($white_in, $white_out, ">&STDERR", $white." 1");
     #print "white pid: $pidw\n" if $verbose;
     
     my $pass = 0;

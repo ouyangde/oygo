@@ -14,10 +14,10 @@ public ZobristBoard<T, RenjuBoard<T> >
 public:
 	static const bool use_mercy_rule = true;
 	static const int renju_distance = 1;
-	using BasicBoard<T, RenjuBoard>::empty_v_cnt;
+	//using BasicBoard<T, RenjuBoard>::empty_v_cnt;
+	//using BasicBoard<T, RenjuBoard>::empty_v;
 	using BasicBoard<T, RenjuBoard>::color_at;
 	using BasicBoard<T, RenjuBoard>::board_area;
-	using BasicBoard<T, RenjuBoard>::empty_v;
 	using BasicBoard<T, RenjuBoard>::player_v_cnt;
 	using BasicBoard<T, RenjuBoard>::move_history;
 	using BasicBoard<T, RenjuBoard>::move_no;
@@ -30,8 +30,15 @@ public:
 	uint chain_id[4][Vertex<T>::cnt]; // 每个点所属的4个方向上的棋串id
 	FastMap<Vertex<T>, bool>        good_at; // 是否good 
 	FastMap<Vertex<T>, uint>        good_pos; // good vetex在good_v中的索引
-	Vertex<T>                       good_v[board_area]; // 棋盘上的空点
+	static const uint empty_size = board_area;
+	union {
+	Vertex<T>                       good_v[empty_size]; // 棋盘上的空点
+	Vertex<T>                       empty_v[empty_size]; // 棋盘上的空点
+	};
+	union {
 	uint                         	good_v_cnt;
+	uint				empty_v_cnt;
+	};
 #if 0
 #undef empty_v_for_each_and_pass
   #define empty_v_for_each_and_pass(board, vv, i) {                    \
@@ -45,6 +52,7 @@ public:
 #endif
 public:                         // board interface
 	RenjuBoard() {
+		//:empty_v_cnt(good_v_cnt),empty_v(good_v) {
 		vertex_for_each_all(v) {
 			rep(i, 4) {
 				chain_next_v[i][v] = v;
