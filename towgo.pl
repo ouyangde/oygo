@@ -83,7 +83,7 @@ my $b_gtp_ver;				# gtp version of black player
 my $w_gtp_ver;				# gtp version of white player
 
 while ($games > 0) {
-    print "B:$black\tW:$white\n" if $verbose;
+	#print "B:$black\tW:$white\n" if $verbose;
 
     $pidb = open3($black_in, $black_out, ">&STDERR", $black);
     #print "black pid: $pidb\n" if $verbose;
@@ -128,6 +128,8 @@ while ($games > 0) {
 	}
     }
     $game_list{$winner}++;
+    if($winner == $black) { print "B "; }
+    else { print "W "; }
     print "$winner win\n" if $verbose;
 
     $games-- if $games > 0;

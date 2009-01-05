@@ -175,7 +175,7 @@ bool parse_arg(int argc, char** argv) {
 				  break;
 			case '-': argv[argc]+=2;
 				  {
-					  int time = atoi(argv[argc]);
+					  float time = atof(argv[argc]);
 					  if(time != 0) {
 						  time_per_move = time;
 					  }
@@ -195,10 +195,10 @@ int main(int argc, char** argv) {
 
 	//NbrCounter::output_eye_map();
 	//return 0;
-	GoBoard<9> board;
-	GoPolicy<9> policy;
-	//RenjuBoard<15> board;
-	//RenjuPolicy<15> policy;
+	//GoBoard<9> board;
+	//GoPolicy<9> policy;
+	RenjuBoard<15> board;
+	RenjuPolicy<15> policy;
 
 	//ostringstream response;
 	//uint playout_cnt = 100000;

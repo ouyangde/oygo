@@ -141,8 +141,8 @@ class Node {
 public:
 	Vertex<T> v;
 	// TODO: use Stat or UCGStat ?
-	UCGStat stat;
-	//Stat stat;
+	//UCGStat stat;
+	Stat stat;
 	float value() { 
 		return stat.mean();
 	}
@@ -207,7 +207,9 @@ public:
 			else break;
 
 			// remove best
-			best_child = child_tab [--child_tab_size];
+			--child_tab_size;
+			best_child = child_tab[child_tab_size];
+			best_child_idx = 0;
 		}
 
 #undef best_child

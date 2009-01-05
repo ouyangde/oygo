@@ -22,7 +22,7 @@ const uint mercy_threshold     = 25;
 const uint initial_value                 = 0;
 const uint initial_bias                  = 0;
 const float mature_bias_threshold         = initial_bias + 1;
-const float explore_rate                  = 2.0;
+const float explore_rate                  = 0.5625;
 const uint  uct_max_depth                 = 1000;
 // how many memory would be use
 const uint  uct_node_memory               = 40;
