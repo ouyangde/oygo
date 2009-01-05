@@ -144,7 +144,7 @@ void match_human(Board<T>* board, Policy<T>* policy, bool aifirst = true) {
 		Vertex<T> v = engine->gen_move(pl);
 		board->play(pl, v);
 		engine->play(pl,v);
-		cerr<<to_string(*board);
+		//cerr<<to_string(*board);
 		cout<<"="<<v<<endl;
 	}
 	while(true) {
@@ -195,10 +195,10 @@ int main(int argc, char** argv) {
 
 	//NbrCounter::output_eye_map();
 	//return 0;
-	//GoBoard<19> board;
-	//GoPolicy<19> policy;
-	RenjuBoard<15> board;
-	RenjuPolicy<15> policy;
+	GoBoard<9> board;
+	GoPolicy<9> policy;
+	//RenjuBoard<15> board;
+	//RenjuPolicy<15> policy;
 
 	ostringstream response;
 	uint playout_cnt = 100000;
@@ -206,9 +206,9 @@ int main(int argc, char** argv) {
 	//simple_playout_benchmark::run<false> (&board, &policy, playout_cnt, response);
 	//cout << response.str();
 	
-	ofstream fout("log.txt"); 
+	//ofstream fout("log.txt"); 
 	if(argc > 1) {
-		cerr.rdbuf(fout.rdbuf());
+		//cerr.rdbuf(fout.rdbuf());
 	}
 	match_human(&board, &policy, parse_arg(argc, argv));
 	return 0;

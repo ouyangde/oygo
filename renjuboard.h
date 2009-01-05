@@ -32,6 +32,7 @@ public:
 	FastMap<Vertex<T>, uint>        good_pos; // good vetex在good_v中的索引
 	Vertex<T>                       good_v[board_area]; // 棋盘上的空点
 	uint                         	good_v_cnt;
+#if 0
 #undef empty_v_for_each_and_pass
   #define empty_v_for_each_and_pass(board, vv, i) {                    \
       Vertex<T> vv = Vertex<T>::pass();                                \
@@ -41,6 +42,7 @@ public:
         i;                                                             \
       }                                                                \
     }
+#endif
 public:                         // board interface
 	RenjuBoard() {
 		vertex_for_each_all(v) {

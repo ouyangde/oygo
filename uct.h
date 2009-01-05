@@ -25,17 +25,16 @@ public:
 		index[free_count++] = p;  
 	}
 };
+const uint  uct_max_nodes = uct_node_memory * 1000000 / 16;
+const uint  ucg_max_nodes = uct_node_memory * 1000000 / 16;
+const uint  ucg_max_hash = uct_node_memory * 1000000 / sizeof(20);
 class Stat {
 public:
   float sample_count;
   float sample_sum;
-  uint ref;
-  Hash hash;
-  Player pl;
 
   Stat () {
     reset ();
-    ref = 0;
   }
   void reset () {
     sample_count       = 0; // TODO 
@@ -53,6 +52,77 @@ public:
     return sample_sum / sample_count; 
   }
   float count () { return sample_count; }
+  void init() {}
+  void init(Player pl, Hash hash) {}
+};
+
+class _UCGStat : public Stat {
+public:
+	uint ref;
+	Hash hash;
+	Player pl;
+	_UCGStat() {
+		ref = 0;
+	}
+};
+class UCGStat {
+public:
+	static _UCGStat* m_statpool;
+	_UCGStat * stat;
+	float mean() {
+		if(stat) return stat->mean();
+		return large_float;
+	}
+	float count() {
+		if(stat) return stat->count(); 
+		return 0;
+	}
+	void update_win() {
+		assert(stat != NULL);
+		stat->update_win();
+	}
+	void update_loss() {
+		assert(stat != NULL);
+		stat->update_loss();
+	}
+	UCGStat() {
+		stat = NULL;
+	}
+	~UCGStat() {
+		if(stat) {
+			stat->ref--;
+		}
+	}
+	void init() {
+		static _UCGStat s_stat;
+		if(stat) return;
+		stat = &s_stat;
+		stat->ref++;
+	}
+	void init(Player pl, Hash hash) {
+		if(stat) return;
+		uint idx_start = hash.hash % ucg_max_hash;
+		uint pos = idx_start;
+		while(m_statpool[pos].ref) {
+			//cerr<<"exists"<<endl;
+			if(m_statpool[pos].hash == hash && m_statpool[pos].pl == pl) {
+				stat = &(m_statpool[pos]);
+				m_statpool[pos].ref++;
+				return;
+			} else {
+				pos = (pos + 1) % ucg_max_hash;
+			}
+			if(pos == idx_start) {
+				cerr<<"new stat"<<endl;
+				stat = new _UCGStat;
+				return;
+			}
+		}
+		m_statpool[pos].ref = 1;
+		m_statpool[pos].pl = pl;
+		m_statpool[pos].hash = hash;
+		stat = &(m_statpool[pos]);
+	}
 };
 #define node_for_each_child(node, act_node, i) do {   \
 	assertc (tree_ac, node!= NULL);                         \
@@ -64,24 +134,20 @@ public:
 	}                                                       \
 } while (false)
 
-const uint  uct_max_nodes = uct_node_memory * 1000000 / 16;
-const uint  ucg_max_nodes = uct_node_memory * 1000000 / 16;
-const uint  ucg_max_hash = uct_node_memory * 1000000 / sizeof(20);
 // class Node
 template<uint T>
 class Node {
 	static Pool<Node, ucg_max_nodes> m_pool;
-	static Stat* m_statpool;
 public:
 	Vertex<T> v;
-	Stat* stat;
+	// TODO: use Stat or UCGStat ?
+	UCGStat stat;
+	//Stat stat;
 	float value() { 
-		if(stat) return stat->mean();
-		return large_float; 
+		return stat.mean();
 	}
 	float count() { 
-		if(stat) return stat->count(); 
-		else return 0;
+		return stat.count(); 
 	}
 	Node*  first_child;			// head of list of moves of particular player 
 	Node*  sibling;                           // NULL if last child
@@ -98,8 +164,8 @@ public:
 public:
 	void dump() {
 		cerr<<v
-			<<","<<stat->mean()
-			<<","<<stat->count()
+			<<","<<stat.mean()
+			<<","<<stat.count()
 			<<endl;
 	}
 	void rec_print(ostream& out, uint depth, Player pl) {
@@ -150,47 +216,19 @@ public:
 		this->v       = v;
 		first_child   = NULL;
 		sibling       = NULL;
-		stat = NULL;
 	}
 
 	~Node() {
-		if(stat) {
-			stat->ref--;
-		}
 	}
 	//void init(Vertex<T> v) {
 	//}
 
 	void initstat() {
-		static Stat s_stat;
-		if(stat) return;
-		stat = &s_stat;
-		stat->ref++;
+		stat.init();
 	}
 
 	void initstat(Player pl, Hash hash) {
-		if(stat) return;
-		uint idx_start = hash.hash % ucg_max_hash;
-		uint pos = idx_start;
-		while(m_statpool[pos].ref) {
-			//cerr<<"exists"<<endl;
-			if(m_statpool[pos].hash == hash && m_statpool[pos].pl == pl) {
-				stat = &(m_statpool[pos]);
-				m_statpool[pos].ref++;
-				return;
-			} else {
-				pos = (pos + 1) % ucg_max_hash;
-			}
-			if(pos == idx_start) {
-				cerr<<"new stat"<<endl;
-				stat = new Stat;
-				return;
-			}
-		}
-		m_statpool[pos].ref = 1;
-		m_statpool[pos].pl = pl;
-		m_statpool[pos].hash = hash;
-		stat = &(m_statpool[pos]);
+		stat.init(pl, hash);
 	}
 	void add_child(Node* new_child) { // TODO sorting?
 		assertc(tree_ac, new_child->sibling == NULL); 
@@ -224,12 +262,10 @@ public:
 		return value() + sqrt (explore_coeff / count());
 	}
 	void update_win() {
-		assert(stat != NULL);
-		stat->update_win();
+		stat.update_win();
 	}
 	void update_loss() {
-		assert(stat != NULL);
-		stat->update_loss();
+		stat.update_loss();
 	}
 	bool is_mature () { 
 		return count() > mature_bias_threshold; 
@@ -545,6 +581,5 @@ public:
 template<uint T>
 // TODO:UCG将节点状态单独存储，用hash索引
 Pool<Node<T>, ucg_max_nodes> Node<T>::m_pool;
-template<uint T>
-Stat* Node<T>::m_statpool = new Stat[ucg_max_hash];
+_UCGStat* UCGStat::m_statpool = new _UCGStat[ucg_max_hash];
 #endif
