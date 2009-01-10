@@ -14,6 +14,7 @@ public ZobristBoard<T, RenjuBoard<T> >
 public:
 	static const bool use_mercy_rule = true;
 	static const int renju_distance = 1;
+	static const int renju_distance2 = 2;
 	//using BasicBoard<T, RenjuBoard>::empty_v_cnt;
 	//using BasicBoard<T, RenjuBoard>::empty_v;
 	using BasicBoard<T, RenjuBoard>::color_at;
@@ -28,11 +29,18 @@ public:
 	Vertex<T> chain_next_v[4][Vertex<T>::cnt];
 	uint chain_length[4][Vertex<T>::cnt]; // indexed by chain_id 棋串的长度
 	uint chain_id[4][Vertex<T>::cnt]; // 每个点所属的4个方向上的棋串id
+
+	static const uint empty_size = board_area;
 	FastMap<Vertex<T>, bool>        good_at; // 是否good 
 	FastMap<Vertex<T>, uint>        good_pos; // good vetex在good_v中的索引
-	static const uint empty_size = board_area;
+	//Vertex<T>                       good_v[empty_size]; 
+	//uint                         	good_v_cnt;
+#if 0
+	FastMap<Vertex<T>, bool>        good2_at; // 是否good 
+	FastMap<Vertex<T>, uint>        good2_pos; // good vetex在good_v中的索引
+#endif
 	union {
-	Vertex<T>                       good_v[empty_size]; // 棋盘上的空点
+	Vertex<T>                       good_v[empty_size]; 
 	Vertex<T>                       empty_v[empty_size]; // 棋盘上的空点
 	};
 	union {
@@ -52,7 +60,6 @@ public:
 #endif
 public:                         // board interface
 	RenjuBoard() {
-		//:empty_v_cnt(good_v_cnt),empty_v(good_v) {
 		vertex_for_each_all(v) {
 			rep(i, 4) {
 				chain_next_v[i][v] = v;
@@ -60,12 +67,19 @@ public:                         // board interface
 				chain_length[i][v] = 0;
 			}
 			good_at[v] = false;
+			//good2_at[v] = false;
 		}
 		good_v_cnt  = 0;
+		//good2_v_cnt  = 0;
 		Vertex<T> v = Vertex<T>::of_coords(T/2,T/2);
 		good_at[v] = true;
 		good_pos[v] = good_v_cnt;
 		good_v[good_v_cnt++] = v;
+#if 0
+		good2_at[v] = true;
+		good2_pos[v] = good2_v_cnt;
+		good2_v[good2_v_cnt++] = v;
+#endif 
 		komi = 0;
 	}
 	all_inline 
@@ -137,13 +151,28 @@ private:
 			good_pos[good_v[good_v_cnt]] = good_pos[v];
 			good_v[good_pos[v]] = good_v[good_v_cnt];
 		}
-		vertex_for_each_far_nbr(v, renju_distance, nbr_v, {
+		vertex_for_each_8_nbr(v, nbr_v, i, {
 			if(!good_at[nbr_v] && color_at[nbr_v] == color::empty) {
 				good_at[nbr_v] = true;
 				good_pos[nbr_v] = good_v_cnt;
 				good_v[good_v_cnt++] = nbr_v;
 			}
 		});
+		
+#if 0
+		if(good2_at[v]) {
+			good2_v_cnt--;
+			good2_pos[good2_v[good2_v_cnt]] = good2_pos[v];
+			good2_v[good2_pos[v]] = good2_v[good2_v_cnt];
+		}
+		vertex_for_each_far_nbr2(v, nbr_v, {
+			if(!good2_at[nbr_v] && color_at[nbr_v] == color::empty) {
+				good2_at[nbr_v] = true;
+				good2_pos[nbr_v] = good2_v_cnt;
+				good2_v[good2_v_cnt++] = nbr_v;
+			}
+		});
+#endif
 	}
 	void remove_stone(Player pl, Vertex<T> v) {
 		// 按照place_stone相反的顺序

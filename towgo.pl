@@ -43,7 +43,7 @@ my $size = 19;
 my $verbose = 1;
 my $komi;
 my $handicap = 0;
-my $games = 1;
+my $games = 2;
 my $wanthelp;
 
 my $helpstring = "
@@ -82,6 +82,8 @@ my $err = new FileHandle;
 my $b_gtp_ver;				# gtp version of black player
 my $w_gtp_ver;				# gtp version of white player
 
+$game_list{$black} = 0;
+$game_list{$white} = 0;
 while ($games > 0) {
 	#print "B:$black\tW:$white\n" if $verbose;
 
@@ -128,7 +130,7 @@ while ($games > 0) {
 	}
     }
     $game_list{$winner}++;
-    if($winner == $black) { print "B "; }
+    if($winner eq $black) { print "B "; }
     else { print "W "; }
     print "$winner win\n" if $verbose;
 
@@ -146,9 +148,14 @@ while ($games > 0) {
     $white = $temp;
 }
 
- foreach my $key (keys %game_list) {
-    print "$key:".$game_list{$key}."\n";
-  }
+foreach my $key (keys %game_list) {
+	print "$key:".$game_list{$key}."\n";
+}
+if($game_list{$black} > $game_list{$white}) {
+	print "winner:$black\n";
+} elsif($game_list{$black} < $game_list{$white}) {
+	print "winner:$white\n";
+}
 
 
 sub eat_no_response {

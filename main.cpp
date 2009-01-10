@@ -152,7 +152,9 @@ void match_human(Board<T>* board, Policy<T>* policy, bool aifirst = true) {
 		if (!getline(cin, line)) break;
 		Vertex<T> v = of_gtp_string<T>(line);
 		Player pl = board->act_player();
-		if(v == Vertex<T>::any() || board->color_at[v] != color::empty || !board->play(pl,v)) {
+		if(v == Vertex<T>::any() 
+			|| (v != Vertex<T>::pass() && board->color_at[v] != color::empty) 
+			|| !board->play(pl,v)) {
 			cout<<"?"<<endl;
 			continue;
 		}
@@ -173,11 +175,32 @@ bool parse_arg(int argc, char** argv) {
 		switch(argv[argc][0]) {
 			case '1': ret = false;
 				  break;
-			case '-': argv[argc]+=2;
-				  {
-					  float time = atof(argv[argc]);
-					  if(time != 0) {
-						  time_per_move = time;
+			case '-': 
+				  if(isdigit(argv[argc][2])) {
+					  argv[argc]+=2;
+					  {
+						  float time = atof(argv[argc]);
+						  if(time != 0) {
+							  time_per_move = time;
+						  }
+					  }
+				  } else if(strncmp(argv[argc], "--arg=", 6) == 0){
+					  argv[argc]+=6;
+					  istringstream in(argv[argc]);
+					  float mature_bias; 
+					  float explore_rate; 
+					  float aaf_fraction; 
+					  char c;
+					  if(in >> mature_bias) {
+						  mature_bias_threshold = initial_bias + mature_bias;
+					  }
+					  in >> c;
+					  if(in >> explore_rate) {
+						  ::explore_rate = explore_rate;
+					  }
+					  in >> c;
+					  if(in >> aaf_fraction) {
+						  ::aaf_fraction = aaf_fraction;
 					  }
 				  }
 				  break;
@@ -188,6 +211,9 @@ bool parse_arg(int argc, char** argv) {
 	return ret;
 }
 float time_per_move		  = 1.0;
+float mature_bias_threshold         = initial_bias + 1000;
+float explore_rate                  = 1;
+float aaf_fraction 		  = 1;
 // main
 int main(int argc, char** argv) { 
 	setvbuf(stdout, (char *)NULL, _IONBF, 0);

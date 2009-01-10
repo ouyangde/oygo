@@ -26,8 +26,7 @@ public:
 	}
 };
 const uint  uct_max_nodes = uct_node_memory * 1000000 / 16;
-const uint  ucg_max_nodes = uct_node_memory * 1000000 / 16;
-const uint  ucg_max_hash = uct_node_memory * 1000000 / sizeof(20);
+const uint  ucg_max_hash = uct_node_memory * 1000000 / 20;
 class Stat {
 public:
   float sample_count;
@@ -137,7 +136,7 @@ public:
 // class Node
 template<uint T>
 class Node {
-	static Pool<Node, ucg_max_nodes> m_pool;
+	static Pool<Node, uct_max_nodes> m_pool;
 public:
 	Vertex<T> v;
 	// TODO: use Stat or UCGStat ?
@@ -486,11 +485,34 @@ public:
 					tree->act_node()->initstat(act_player, play_board->hash);
 					// 否则进行模拟
 					// TODO assert act_plauer == board->Act_player ()
+					uint begin_move_no = play_board->move_no;
 					Playout<T, Policy, Board>(policy, play_board).run();
+					uint end_move_no = play_board->move_no;
 					//cerr<<to_string(*play_board)<<endl;
 					// 更新结果
 					tree->update_history(play_board->winner(), act_player);
 					// 一次模拟对局结束
+					// TODO: begin AAF
+					if(tree->history_top == 0) {
+						break;
+					}
+					end_move_no = begin_move_no + int(aaf_fraction * (end_move_no - begin_move_no));
+					if(begin_move_no == end_move_no) break;
+
+					Node<T>* move_tab[Vertex<T>::cnt];
+					memset(move_tab, 0, sizeof(move_tab));
+					node_for_each_child(tree->history[tree->history_top-1], child, {
+						move_tab[child->v] = child;
+					});
+					for(uint i = begin_move_no; i < end_move_no; i++) {
+						Vertex<T> v = play_board->move_history[i].get_vertex();
+						Player pl = play_board->move_history[i].get_player();
+						if(pl != act_player && move_tab[v]) {
+							tree->history[tree->history_top] = move_tab[v];
+							tree->update_history(play_board->winner(), act_player);
+						}
+					}
+					
 					//int winner_idx = play_board->winner().get_idx ();
 					// result values are 1 for black, -1 for white
 					//tree->update_history(1 - winner_idx - winner_idx); 
@@ -508,6 +530,9 @@ public:
 				continue; //TODO: return?
 			}
 
+			// TODO: after both_player_pass?
+			act_player = play_board->act_player();
+
 			//was_pass [act_player]  = (v == Vertex<T>::pass());
 			if(play_board->both_player_pass()) {
 			//if (was_pass [player::black] & was_pass [player::white]) {
@@ -515,7 +540,6 @@ public:
 				tree->update_history(play_board->winner(), act_player);
 				break;
 			}
-			act_player = play_board->act_player();
 		} while (true);
 	}
 
@@ -582,6 +606,7 @@ public:
 };
 template<uint T>
 // TODO:UCG将节点状态单独存储，用hash索引
-Pool<Node<T>, ucg_max_nodes> Node<T>::m_pool;
-_UCGStat* UCGStat::m_statpool = new _UCGStat[ucg_max_hash];
+Pool<Node<T>, uct_max_nodes> Node<T>::m_pool;
+//_UCGStat* UCGStat::m_statpool = new _UCGStat[ucg_max_hash];
+_UCGStat* UCGStat::m_statpool = NULL;
 #endif

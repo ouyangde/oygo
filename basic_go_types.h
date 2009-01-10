@@ -229,6 +229,38 @@ public:
 		}\
 	}\
 }
+#define vertex_for_each_far_nbr2(center_v, nbr_v, block) { \
+	Vertex<T> nbr_v; \
+	Vertex<T> vv1,vv2;\
+	nbr_v = center_v.N ();block;                       \
+	nbr_v = center_v.W ();block;                       \
+	nbr_v = center_v.S ();block;                       \
+	nbr_v = center_v.E ();block;                       \
+	nbr_v = center_v.NW ();block;                          \
+	nbr_v = center_v.NE ();block;                          \
+	nbr_v = center_v.SE ();block;                          \
+	nbr_v = center_v.SW ();block;                          \
+	coord::t row = center_v.row();\
+	coord::t col = center_v.col();\
+	if (col > 1) {\
+		nbr_v = center_v.W().W();block;                       \
+		if (row > 1) \
+		nbr_v = center_v.NW().NW();block;                       \
+		if (row < int(T) - 2) \
+		nbr_v = center_v.SW().SW();block;                       \
+	}\
+	if (col < int(T) - 2) {\
+		nbr_v = center_v.E().E();block;                       \
+		if (row > 1) \
+		nbr_v = center_v.NE().NE();block;                       \
+		if (row < int(T) - 2) \
+		nbr_v = center_v.SE().SE();block;                       \
+	}\
+	if (row > 1) \
+	nbr_v = center_v.N().N();block;                       \
+	if (row < int(T) - 2) \
+	nbr_v = center_v.S().S();block;                       \
+}
 
 /*
  * аз╣Ц
@@ -338,7 +370,7 @@ public:
 	}
 
 	Vertex<T> get_vertex () { 
-		return Vertex<T> (idx & ((1 << ::Vertex<T>::bits_used) - 1)) ; 
+		return Vertex<T>::of(idx & ((1 << ::Vertex<T>::bits_used) - 1)) ; 
 	}
 
 
