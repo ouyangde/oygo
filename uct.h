@@ -569,7 +569,7 @@ public:
 	Vertex<T> gen_move(Player player) {
 		Node<T>* best;
 		tree->max_top = 0;
-		//root_ensure_children_legality(player);
+		root_ensure_children_legality(player);
 		//rep(ii, uct_genmove_playout_cnt) do_playout(player);
 		float seconds_begin = get_seconds();
 		float seconds_end = 0;
