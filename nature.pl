@@ -35,6 +35,7 @@ sub rand_gene {
 sub clone {
 	my $a = shift;
 	my ($id, $gid, $life, $gene1, $gene2, $gene3) = @$a;
+	$curid++;
 	if(int(rand 5) == 1) {
 		my $n = int(rand 3);
 		if($n == 0) {
@@ -47,7 +48,6 @@ sub clone {
 		unless(($gene1 == $a->[3] && 
 				$gene2 == $a->[4] && 
 				$gene3 == $a->[5])) {
-			$curid++;
 			$gid = $curid;
 		}
 	}
