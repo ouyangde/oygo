@@ -169,4 +169,51 @@ public:
 	}
 
 };
+template<uint T> class EatPolicy {
+protected:
+
+	PmRandom pm; 
+
+	uint to_check_cnt;
+	uint act_evi;
+
+	EatBoard<T>* board;
+	Player act_player;
+
+public:
+
+	EatPolicy () : board (NULL),pm(time(NULL)) { }
+
+	void begin_playout (EatBoard<T>* board_) { 
+		board = board_;
+	}
+
+	void prepare_vertex () {
+		act_player     = board->act_player ();
+		to_check_cnt   = board->good_v_cnt;
+		act_evi        = pm.rand_int (to_check_cnt); 
+	}
+
+	Vertex<T> next_vertex () {
+		Vertex<T> v;
+		while (true) {
+			if (to_check_cnt == 0) return Vertex<T>::pass ();
+			to_check_cnt--;
+			v = board->good_v [act_evi];
+			act_evi++;
+			if (act_evi == board->good_v_cnt) act_evi = 0;
+			return v;
+		}
+	}
+
+	void bad_vertex (Vertex<T>) {
+	}
+
+	void played_vertex (Vertex<T>) { 
+	}
+
+	void end_playout (playout_status_t) { 
+	}
+
+};
 //template<uint T> PmRandom SimplePolicy<T>::pm(123);

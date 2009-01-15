@@ -4,7 +4,7 @@
 #include <string>
 #include <sstream>
 #include <iostream>
-#include <basic_go_types.h>
+#include "basic_go_types.h"
 using namespace std;
 
 extern const char col_tab[27]; // "ABCDEFGHJKLMNOPQRSTUVWXYZ";

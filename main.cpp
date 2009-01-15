@@ -6,9 +6,11 @@
 #include <fstream>
 #include <iomanip>
 #include <cmath>
+#include <cassert>
 using namespace std;
 #include "go_conf.h"
 #include "utils.h"
+#include "eatboard.h"
 #include "goboard.h"
 #include "renjuboard.h"
 #include "playout.h"
@@ -144,7 +146,7 @@ void match_human(Board<T>* board, Policy<T>* policy, bool aifirst = true) {
 		Vertex<T> v = engine->gen_move(pl);
 		board->play(pl, v);
 		engine->play(pl,v);
-		//cerr<<to_string(*board);
+		cerr<<to_string(*board);
 		cout<<"="<<v<<endl;
 	}
 	while(true) {
@@ -211,9 +213,9 @@ bool parse_arg(int argc, char** argv) {
 	return ret;
 }
 float time_per_move		  = 1.0;
-float mature_bias_threshold         = initial_bias + 1000;
-float explore_rate                  = 1;
-float aaf_fraction 		  = 1;
+float mature_bias_threshold         = initial_bias + 1;
+float explore_rate                  = 2;
+float aaf_fraction 		  = 0;
 // main
 int main(int argc, char** argv) { 
 	setvbuf(stdout, (char *)NULL, _IONBF, 0);
@@ -223,8 +225,10 @@ int main(int argc, char** argv) {
 	//return 0;
 	//GoBoard<9> board;
 	//GoPolicy<9> policy;
-	RenjuBoard<15> board;
-	RenjuPolicy<15> policy;
+	//RenjuBoard<15> board;
+	//RenjuPolicy<15> policy;
+	EatBoard<9> board;
+	EatPolicy<9> policy;
 
 	//ostringstream response;
 	//uint playout_cnt = 100000;

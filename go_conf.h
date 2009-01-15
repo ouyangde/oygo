@@ -26,12 +26,12 @@ extern float explore_rate;
 extern float aaf_fraction;
 // how many memory would be use
 const uint  uct_node_memory               = 40;
-const uint  uct_max_level       	  = 19;
+const uint  uct_max_level       	  = 49;
 extern float time_per_move;
 const uint  uct_max_depth                 = 1000;
 const uint  uct_genmove_playout_cnt       = 100000;
 const float resign_value                  = 0.45;
-const float print_visit_threshold_base    = 500.0;
+const float print_visit_threshold_base    = 5000.0;
 const float print_visit_threshold_parent  = 0.03;
 
 

@@ -3,7 +3,7 @@
 use DBI;
 local $MAX_COUNT = 40;
 local $curid;
-local $prgname = "oygo.exe";
+local $prgname = "oygo_renju.exe";
 
 my $time_to_die = 0;
 sub signal_handler {

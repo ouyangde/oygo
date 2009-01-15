@@ -201,8 +201,9 @@ public:
 					best_child_idx = ii;
 			}
 			// rec call
-			if (best_child->count() - initial_bias >= min_visit_cnt)
+			if (best_child->count() - initial_bias >= min_visit_cnt) {
 				child_tab [best_child_idx]->rec_print (out, depth + 1, player);
+			}
 			else break;
 
 			// remove best
@@ -446,13 +447,14 @@ public:
 		// ¹ØÓÚsuperko, ²Î¿¼http://www.weddslist.com/kgs/past/superko.html
 		tree->history_reset();
 
-		assertc(uct_ac, tree->history_top == 0);
-		assertc(uct_ac, tree->act_node()->first_child == NULL);
-
-		empty_v_for_each_and_pass(base_board, v, {
-		//	if (base_board.is_strict_legal (pl, v))
-			tree->alloc_child(v);
-		});
+		if (tree->act_node()->no_children()) {
+			assertc(uct_ac, tree->history_top == 0);
+			assertc(uct_ac, tree->act_node()->first_child == NULL);
+			empty_v_for_each_and_pass(base_board, v, {
+			//	if (base_board.is_strict_legal (pl, v))
+				tree->alloc_child(v);
+			});
+		}
 	}
 
 	//flatten 
@@ -573,7 +575,7 @@ public:
 		//rep(ii, uct_genmove_playout_cnt) do_playout(player);
 		float seconds_begin = get_seconds();
 		float seconds_end = 0;
-		const uint split_cnt = 1000;
+		const uint split_cnt = 500;
 		while(true) {
 			if(Node<T>::free_count() < split_cnt * base_board->empty_v_cnt) {
 				if(!tree->root->remove_bad_child()) {
