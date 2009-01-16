@@ -223,12 +223,12 @@ int main(int argc, char** argv) {
 
 	//NbrCounter::output_eye_map();
 	//return 0;
-	//GoBoard<9> board;
-	//GoPolicy<9> policy;
+	GoBoard<9> board;
+	GoPolicy<9> policy;
 	//RenjuBoard<15> board;
 	//RenjuPolicy<15> policy;
-	EatBoard<9> board;
-	EatPolicy<9> policy;
+	//EatBoard<9> board;
+	//EatPolicy<9> policy;
 
 	//ostringstream response;
 	//uint playout_cnt = 100000;
